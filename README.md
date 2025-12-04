@@ -60,6 +60,12 @@ const finalQuery = baseQuery.concat(subQuery, "&&").build();
 - Grouping with parentheses
 - URL encoding support (enabled by default)
 
+## Todos
+1. Adding a testing framework
+2. A new package for react (supporting immutability through hooks)
+   1. Keeping it separate to reduce package size
+3. CI/CD to simplify deployment
+
 ## License
 
 ISC
