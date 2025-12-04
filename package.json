@@ -1,7 +1,7 @@
 {
   "name": "querykit-builder",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.0.2",
+  "description": "This is a Typescript query builder based on working with pdevito3/QueryKit and forked from npm library fluent-querykit",
   "main": "dist/index.js",
   "keywords": [],
   "author": "",

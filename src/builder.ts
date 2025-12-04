@@ -100,8 +100,15 @@ export default class QueryBuilder {
             otherQuery = otherQuery.replace(/^Filters=\s*/, "");
         }
 
+        // Wrap the concatenated query in parentheses
         this.query += `(${otherQuery}) `;
         return this;
+    }
+
+    public clone(): QueryBuilder {
+        const cloned = new QueryBuilder(this.encodeURi, false);
+        cloned.query = this.query;
+        return cloned;
     }
 
     public countGreaterThan(property: string, value: number): this { return this.op(property, QueryOperator.CountGreaterThan, value); }
