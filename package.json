@@ -16,7 +16,7 @@
 	},
 	"scripts": {
 		"build": "tsc --outDir dist",
-		"prepublish": "pnpm run build",
+		"prepublish": "npm run build",
 		"test": "vitest"
 	},
 	"devDependencies": {
