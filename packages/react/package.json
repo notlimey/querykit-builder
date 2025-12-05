@@ -1,0 +1,36 @@
+{
+	"name": "react-querykit-builder",
+	"version": "0.0.1",
+	"description": "",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": "./dist/index.js"
+	},
+	"scripts": {
+		"build": "tsc",
+		"prepublishOnly": "npm run build"
+	},
+	"keywords": [],
+	"author": "notlimey",
+	"license": "ISC",
+	"type": "module",
+	"devDependencies": {
+		"@types/react": "^19.2.7",
+		"@types/react-dom": "^19.2.3",
+		"typescript": "^5.9.3"
+	},
+	"dependencies": {
+		"querykit-builder": "^0.0.5",
+		"react": "^19.2.1",
+		"react-dom": "^19.2.1"
+	},
+	"peerDependencies": {
+		"react": ">=16.8.0",
+		"react-dom": ">=16.8.0"
+	},
+	"files": [
+		"dist",
+		"README.md"
+	]
+}

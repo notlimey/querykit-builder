@@ -1,18 +1,30 @@
 {
 	"name": "querykit-builder",
-	"version": "0.0.3",
+	"version": "0.0.5",
 	"description": "This is a Typescript query builder based on working with pdevito3/QueryKit and forked from npm library fluent-querykit",
 	"main": "dist/index.js",
+	"files": [
+		"dist",
+		"README.md"
+	],
 	"keywords": [],
-	"author": "",
+	"author": "notlimey",
 	"license": "ISC",
 	"type": "commonjs",
 	"scripts": {
-		"build": "tsc --outDir dist"
+		"build": "tsc --outDir dist",
+		"prepublish": "pnpm run build"
 	},
 	"dependencies": {},
 	"devDependencies": {
 		"typescript": "^5.9.3",
 		"@biomejs/biome": "2.2.4"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"require": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
 	}
 }
