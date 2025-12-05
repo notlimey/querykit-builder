@@ -1,31 +1,48 @@
+import type { QueryBuilderOptions } from 'querykit-builder';
 import { QueryBuilder } from 'querykit-builder';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+type QueryInput =
+	| string
+	| QueryBuilder
+	| null
+	| undefined
+	| (string | QueryBuilder | null | undefined)[];
 
 export function useQueryBuilder(
-	initialQuery: string | QueryBuilder = '',
-	options?: { encodeUri?: boolean; addFilterStatement?: boolean },
+	initialQuery: QueryInput = '',
+	{ encodeUri, addFilterStatement }: QueryBuilderOptions = {},
 ) {
 	const builderRef = useRef<QueryBuilder | null>(null);
 
-	if (!builderRef.current) {
-		builderRef.current = new QueryBuilder(
-			options?.encodeUri,
-			options?.addFilterStatement,
-		);
-		if (initialQuery) {
-			builderRef.current.append(initialQuery);
+	const createBuilder = useCallback(() => {
+		const builder = new QueryBuilder(encodeUri, addFilterStatement);
+		const inputs = Array.isArray(initialQuery)
+			? initialQuery
+			: [initialQuery];
+
+		for (const input of inputs) {
+			if (input) builder.append(input);
 		}
+		return builder;
+	}, [initialQuery, encodeUri, addFilterStatement]);
+
+	if (!builderRef.current) {
+		builderRef.current = createBuilder();
 	}
 
-	const [query, setQuery] = useState(() =>
-		(builderRef.current as QueryBuilder).build(),
-	);
+	const [query, setQuery] = useState(() => builderRef.current!.build());
 
 	const sync = useCallback(() => {
 		if (builderRef.current) {
 			setQuery(builderRef.current.build());
 		}
 	}, []);
+
+	useEffect(() => {
+		builderRef.current = createBuilder();
+		sync();
+	}, [createBuilder, sync]);
 
 	const update = useCallback(
 		(action: (builder: QueryBuilder) => void) => {
@@ -38,15 +55,9 @@ export function useQueryBuilder(
 	);
 
 	const reset = useCallback(() => {
-		builderRef.current = new QueryBuilder(
-			options?.encodeUri,
-			options?.addFilterStatement,
-		);
-		if (initialQuery) {
-			builderRef.current.append(initialQuery);
-		}
+		builderRef.current = createBuilder();
 		sync();
-	}, [sync, options?.encodeUri, options?.addFilterStatement, initialQuery]);
+	}, [createBuilder, sync]);
 
 	return {
 		query,

@@ -1,11 +1,16 @@
+import { type Maybe, QueryOperator } from './types';
+
+export interface QueryBuilderOptions {
+	encodeUri?: boolean;
+	addFilterStatement?: boolean;
+}
+
 /**
  * A builder for creating query strings.
  */
-import { type Maybe, QueryOperator } from './types';
-
 export default class QueryBuilder {
 	private query: string;
-	private encodeURi: boolean;
+	private encodeURI: boolean;
 
 	/**
 	 * Creates a new instance of the QueryBuilder.
@@ -14,7 +19,7 @@ export default class QueryBuilder {
 	 */
 	constructor(encodeUri: boolean = true, addFilterStatement: boolean = true) {
 		this.query = '';
-		this.encodeURi = encodeUri;
+		this.encodeURI = encodeUri;
 		if (addFilterStatement) {
 			this.query += 'Filters= ';
 		}
@@ -525,7 +530,7 @@ export default class QueryBuilder {
 	 * @returns A new QueryBuilder instance with the same query.
 	 */
 	public clone(): QueryBuilder {
-		const cloned = new QueryBuilder(this.encodeURi, false);
+		const cloned = new QueryBuilder(this.encodeURI, false);
 		cloned.query = this.query;
 		return cloned;
 	}
@@ -657,6 +662,6 @@ export default class QueryBuilder {
 	 */
 	public build(): string {
 		this.query = this.query.trim();
-		return this.encodeURi ? encodeURIComponent(this.query) : this.query;
+		return this.encodeURI ? encodeURIComponent(this.query) : this.query;
 	}
 }
