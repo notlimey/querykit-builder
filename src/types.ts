@@ -16,6 +16,7 @@ export enum QueryOperator {
 	Has = '^$',
 	DoesNotHave = '!^$',
 	In = '^^',
+	NotIn = '!^^',
 
 	// Case Insensitive
 	EqualsCaseInsensitive = '==*',
@@ -29,6 +30,7 @@ export enum QueryOperator {
 	HasCaseInsensitive = '^$*',
 	DoesNotHaveCaseInsensitive = '!^$*',
 	InCaseInsensitive = '^^*',
+	NotInCaseInsensitive = '!^^*',
 
 	// Count
 	CountGreaterThan = '#>',

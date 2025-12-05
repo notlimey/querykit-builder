@@ -20,7 +20,7 @@ const query = new QueryBuilder()
     .build();
 
 console.log(query); 
-// Output: Filters= firstName == "John" && age > 25
+// Output: firstName == "John" && age > 25
 ```
 
 ### Complex Queries
@@ -58,7 +58,30 @@ const finalQuery = baseQuery.concat(subQuery, "&&").build();
 - Case-insensitive string operations
 - Logical operators (`&&`, `||`)
 - Grouping with parentheses
-- URL encoding support (enabled by default)
+- URL encoding support (disabled by default)
+
+### Supported Operators
+
+| Name | Operator | Case Insensitive Operator | Count Operator |
+| :--- | :--- | :--- | :--- |
+| Equals | == | ==* | #== |
+| Not Equals | != | !=* | #!= |
+| Greater Than | > | N/A | #> |
+| Less Than | < | N/A | #< |
+| Greater Than Or Equal | >= | N/A | #>= |
+| Less Than Or Equal | <= | N/A | #<= |
+| Starts With | _= | _=* | N/A |
+| Does Not Start With | !_= | !_=* | N/A |
+| Ends With | _-= | _-=* | N/A |
+| Does Not End With | !_-= | !_-=* | N/A |
+| Contains | @= | @=* | N/A |
+| Does Not Contain | !@= | !@=* | N/A |
+| Sounds Like | ~~ | N/A | N/A |
+| Does Not Sound Like | !~ | N/A | N/A |
+| Has | ^$ | ^$* | N/A |
+| Does Not Have | !^$ | !^$* | N/A |
+| In | ^^ | ^^* | N/A |
+| Not In | !^^ | !^^* | N/A |
 
 ## Todos
 1. Adding a testing framework

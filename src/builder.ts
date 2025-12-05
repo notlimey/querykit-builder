@@ -1,7 +1,15 @@
 import { type Maybe, QueryOperator } from './types';
 
 export interface QueryBuilderOptions {
+	/**
+	 * Whether to encode the resulting query string for use in a URI.
+	 * Defaults to false.
+	 */
 	encodeUri?: boolean;
+	/**
+	 * Whether to add the "Filters= " prefix to the query.
+	 * Defaults to true.
+	 */
 	addFilterStatement?: boolean;
 }
 
@@ -14,10 +22,13 @@ export default class QueryBuilder {
 
 	/**
 	 * Creates a new instance of the QueryBuilder.
-	 * @param encodeUri Whether to encode the resulting query string for use in a URI.
-	 * @param addFilterStatement Whether to add the "Filters= " prefix to the query.
+	 * @param encodeUri Whether to encode the resulting query string for use in a URI. Defaults to false.
+	 * @param addFilterStatement Whether to add the "Filters= " prefix to the query. Defaults to false.
 	 */
-	constructor(encodeUri: boolean = true, addFilterStatement: boolean = true) {
+	constructor(
+		encodeUri: boolean = false,
+		addFilterStatement: boolean = false,
+	) {
 		this.query = '';
 		this.encodeURI = encodeUri;
 		if (addFilterStatement) {
@@ -111,11 +122,17 @@ export default class QueryBuilder {
 	 * @returns The QueryBuilder instance for chaining.
 	 */
 	public append(query: string | QueryBuilder): this {
-		if (query instanceof QueryBuilder) {
-			this.query += query.query;
-		} else {
-			this.query += query;
+		const q = query instanceof QueryBuilder ? query.query : query;
+
+		if (
+			this.query.length > 0 &&
+			!this.query.endsWith(' ') &&
+			this.query !== 'Filters= '
+		) {
+			this.query += ' ';
 		}
+
+		this.query += q;
 		return this;
 	}
 	/**
@@ -279,6 +296,35 @@ export default class QueryBuilder {
 			.join(',');
 		return this.addCondition(
 			`${property} ${QueryOperator.In} [${valueString}]`,
+		);
+	}
+
+	/**
+	 * Adds a "not in" condition.
+	 * @param property The property to check.
+	 * @param values The values to check against.
+	 * @returns The QueryBuilder instance for chaining.
+	 */
+	public notIn(
+		property: string,
+		values: Maybe<Maybe<string | number | boolean>[]>,
+	): this {
+		if (!values) {
+			return this;
+		}
+		const validValues = values.filter(
+			(val) => val !== null && val !== undefined,
+		) as (string | number | boolean)[];
+
+		if (validValues.length === 0) {
+			return this;
+		}
+
+		const valueString = validValues
+			.map((val) => this.stringifyValue(val))
+			.join(',');
+		return this.addCondition(
+			`${property} ${QueryOperator.NotIn} [${valueString}]`,
 		);
 	}
 
@@ -463,6 +509,35 @@ export default class QueryBuilder {
 			.join(',');
 		return this.addCondition(
 			`${property} ${QueryOperator.InCaseInsensitive} [${valueString}]`,
+		);
+	}
+
+	/**
+	 * Adds a "not in" condition (case-insensitive).
+	 * @param property The property to check.
+	 * @param values The values to check against.
+	 * @returns The QueryBuilder instance for chaining.
+	 */
+	public notInCaseInsensitive(
+		property: string,
+		values: Maybe<Maybe<string | number | boolean>[]>,
+	): this {
+		if (!values) {
+			return this;
+		}
+		const validValues = values.filter(
+			(val) => val !== null && val !== undefined,
+		) as (string | number | boolean)[];
+
+		if (validValues.length === 0) {
+			return this;
+		}
+
+		const valueString = validValues
+			.map((val) => this.stringifyValue(val))
+			.join(',');
+		return this.addCondition(
+			`${property} ${QueryOperator.NotInCaseInsensitive} [${valueString}]`,
 		);
 	}
 
@@ -661,7 +736,7 @@ export default class QueryBuilder {
 	 * @returns The completed query string.
 	 */
 	public build(): string {
-		this.query = this.query.trim();
-		return this.encodeURI ? encodeURIComponent(this.query) : this.query;
+		const finalQuery = this.query.trim();
+		return this.encodeURI ? encodeURIComponent(finalQuery) : finalQuery;
 	}
 }
