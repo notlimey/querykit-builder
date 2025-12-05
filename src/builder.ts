@@ -228,7 +228,7 @@ export default class QueryBuilder {
 	public in(property: string, values: (string | number | boolean)[]): this {
 		const valueString = values
 			.map((val) => this.stringifyValue(val))
-			.join(', ');
+			.join(',');
 		return this.addCondition(
 			`${property} ${QueryOperator.In} [${valueString}]`,
 		);
@@ -392,7 +392,7 @@ export default class QueryBuilder {
 	): this {
 		const valueString = values
 			.map((val) => this.stringifyValue(val))
-			.join(', ');
+			.join(',');
 		return this.addCondition(
 			`${property} ${QueryOperator.InCaseInsensitive} [${valueString}]`,
 		);
@@ -557,6 +557,26 @@ export default class QueryBuilder {
 	 */
 	public lessThanOrEqualCaseCount(property: string, value: number): this {
 		return this.op(property, QueryOperator.CountLessThanOrEqual, value);
+	}
+
+	/**
+	 * Adds a "count equals" condition.
+	 * @param property The property to count.
+	 * @param value The value to compare the count against.
+	 * @returns The QueryBuilder instance for chaining.
+	 */
+	public countEquals(property: string, value: number): this {
+		return this.op(property, QueryOperator.CountEquals, value);
+	}
+
+	/**
+	 * Adds a "count not equals" condition.
+	 * @param property The property to count.
+	 * @param value The value to compare the count against.
+	 * @returns The QueryBuilder instance for chaining.
+	 */
+	public countNotEquals(property: string, value: number): this {
+		return this.op(property, QueryOperator.CountNotEquals, value);
 	}
 
 	/**

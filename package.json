@@ -13,12 +13,13 @@
 	"type": "commonjs",
 	"scripts": {
 		"build": "tsc --outDir dist",
-		"prepublish": "pnpm run build"
+		"prepublish": "pnpm run build",
+		"test": "vitest"
 	},
-	"dependencies": {},
 	"devDependencies": {
+		"@biomejs/biome": "2.2.4",
 		"typescript": "^5.9.3",
-		"@biomejs/biome": "2.2.4"
+		"vitest": "^4.0.15"
 	},
 	"exports": {
 		".": {
