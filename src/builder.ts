@@ -119,17 +119,34 @@ export default class QueryBuilder {
 	/**
 	 * Appends a raw query string or another QueryBuilder's query to this builder.
 	 * @param query The query string or QueryBuilder to append.
+	 * @param operator The logical operator to use for joining ('&&' or '||').
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public append(query: string | QueryBuilder): this {
-		const q = query instanceof QueryBuilder ? query.query : query;
+	public append(query: string | QueryBuilder, operator?: '&&' | '||'): this {
+		let q = query instanceof QueryBuilder ? query.query : query;
 
-		if (
-			this.query.length > 0 &&
-			!this.query.endsWith(' ') &&
-			this.query !== 'Filters= '
+		// Don't append if the query to append is empty
+		if (!q.trim()) {
+			return this;
+		}
+
+		// If the other query has a filter statement, remove it
+		if (q.startsWith('Filters=')) {
+			q = q.replace(/^Filters=\s*/, '');
+		}
+
+		const currentTrimmed = this.query.trim();
+		const shouldAddOperator =
+			operator && currentTrimmed !== '' && currentTrimmed !== 'Filters=';
+
+		if (shouldAddOperator) {
+			this.query = `${currentTrimmed} ${operator} `;
+		} else if (
+			currentTrimmed !== '' &&
+			currentTrimmed !== 'Filters=' &&
+			!currentTrimmed.endsWith('(')
 		) {
-			this.query += ' ';
+			this.query = `${currentTrimmed} `;
 		}
 
 		this.query += q;

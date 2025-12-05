@@ -59,6 +59,20 @@ test('Append operator', () => {
 	);
 });
 
+test('Append with "&&" operator', () => {
+	const builder = queryBuilder();
+	builder.equals('Age', 30);
+	builder.append('Name == "John"', '&&');
+	expect(builder.build()).toBe('Age == 30 && Name == "John"');
+});
+
+test('Append with "||" operator', () => {
+	const builder = queryBuilder();
+	builder.equals('Age', 30);
+	builder.append('Name == "John"', '||');
+	expect(builder.build()).toBe('Age == 30 || Name == "John"');
+});
+
 test('Append builder', () => {
 	const builder1 = queryBuilder();
 	builder1.equals('Age', 30);
@@ -70,6 +84,28 @@ test('Append builder', () => {
 	expect(builder1.build()).toBe(
 		`Age ${QueryOperator.Equals} 30 Name ${QueryOperator.Equals} "John"`,
 	);
+});
+
+test('Append builder with "&&" operator', () => {
+	const builder1 = queryBuilder();
+	builder1.equals('Age', 30);
+
+	const builder2 = queryBuilder();
+	builder2.equals('Name', 'John');
+
+	builder1.append(builder2, '&&');
+	expect(builder1.build()).toBe('Age == 30 && Name == "John"');
+});
+
+test('Append builder with "||" operator', () => {
+	const builder1 = queryBuilder();
+	builder1.equals('Age', 30);
+
+	const builder2 = queryBuilder();
+	builder2.equals('Name', 'John');
+
+	builder1.append(builder2, '||');
+	expect(builder1.build()).toBe('Age == 30 || Name == "John"');
 });
 
 test('Does not start with operator', () => {
@@ -274,4 +310,29 @@ test('Count not equals operator', () => {
 	const builder = queryBuilder();
 	builder.countNotEquals('Tags', 2);
 	expect(builder.build()).toBe(`Tags ${QueryOperator.CountNotEquals} 2`);
+});
+
+test('Append empty query', () => {
+	const builder = queryBuilder();
+	builder.equals('Age', 30);
+	builder.append('');
+	expect(builder.build()).toBe('Age == 30');
+});
+
+test('Append query with Filters=', () => {
+	const builder = queryBuilder();
+	builder.equals('Age', 30);
+	builder.append('Filters= Name == "John"', '&&');
+	expect(builder.build()).toBe('Age == 30 && Name == "John"');
+});
+
+test('Append builder with Filters=', () => {
+	const builder1 = queryBuilder();
+	builder1.equals('Age', 30);
+
+	const builder2 = new QueryBuilder(false, true); // addFilterStatement = true
+	builder2.equals('Name', 'John');
+
+	builder1.append(builder2, '&&');
+	expect(builder1.build()).toBe('Age == 30 && Name == "John"');
 });

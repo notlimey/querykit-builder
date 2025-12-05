@@ -9,9 +9,17 @@ type QueryInput =
 	| undefined
 	| (string | QueryBuilder | null | undefined)[];
 
+type UseQueryBuilderOptions = QueryBuilderOptions & {
+	joinOperator?: '&&' | '||';
+};
+
 export function useQueryBuilder(
 	initialQuery: QueryInput = '',
-	{ encodeUri, addFilterStatement }: QueryBuilderOptions = {},
+	{
+		encodeUri,
+		addFilterStatement,
+		joinOperator = '&&',
+	}: UseQueryBuilderOptions = {},
 ) {
 	const builderRef = useRef<QueryBuilder | null>(null);
 
@@ -22,10 +30,10 @@ export function useQueryBuilder(
 			: [initialQuery];
 
 		for (const input of inputs) {
-			if (input) builder.append(input);
+			if (input) builder.append(input, joinOperator);
 		}
 		return builder;
-	}, [initialQuery, encodeUri, addFilterStatement]);
+	}, [initialQuery, encodeUri, addFilterStatement, joinOperator]);
 
 	if (!builderRef.current) {
 		builderRef.current = createBuilder();
