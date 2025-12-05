@@ -8,7 +8,7 @@ export interface QueryBuilderOptions {
 	encodeUri?: boolean;
 	/**
 	 * Whether to add the "Filters= " prefix to the query.
-	 * Defaults to true.
+	 * Defaults to false.
 	 */
 	addFilterStatement?: boolean;
 }
