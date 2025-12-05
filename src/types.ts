@@ -38,3 +38,5 @@ export enum QueryOperator {
 	CountEquals = '#==',
 	CountNotEquals = '#!=',
 }
+
+export type Maybe<T> = T | null | undefined;

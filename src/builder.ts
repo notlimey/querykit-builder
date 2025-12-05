@@ -1,7 +1,7 @@
 /**
  * A builder for creating query strings.
  */
-import { QueryOperator } from './types';
+import { type Maybe, QueryOperator } from './types';
 
 export default class QueryBuilder {
 	private query: string;
@@ -26,7 +26,7 @@ export default class QueryBuilder {
 	 * @returns The QueryBuilder instance for chaining.
 	 */
 	public addCondition(condition: string): this {
-		this.query += condition + ' ';
+		this.query += `${condition} `;
 		return this;
 	}
 
@@ -53,9 +53,12 @@ export default class QueryBuilder {
 	private op(
 		property: string,
 		operator: QueryOperator,
-		value: string | number | boolean,
+		value: Maybe<string | number | boolean>,
 		forceQuote: boolean = false,
 	): this {
+		if (value === null || value === undefined) {
+			return this;
+		}
 		const valStr = forceQuote ? `"${value}"` : this.stringifyValue(value);
 		return this.addCondition(`${property} ${operator} ${valStr}`);
 	}
@@ -66,7 +69,10 @@ export default class QueryBuilder {
 	 * @param value The value to compare against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public equals(property: string, value: string | number | boolean): this {
+	public equals(
+		property: string,
+		value: Maybe<string | number | boolean>,
+	): this {
 		return this.op(property, QueryOperator.Equals, value);
 	}
 	/**
@@ -75,7 +81,10 @@ export default class QueryBuilder {
 	 * @param value The value to compare against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public notEquals(property: string, value: string | number | boolean): this {
+	public notEquals(
+		property: string,
+		value: Maybe<string | number | boolean>,
+	): this {
 		return this.op(property, QueryOperator.NotEquals, value);
 	}
 	/**
@@ -86,9 +95,23 @@ export default class QueryBuilder {
 	 */
 	public greaterThan(
 		property: string,
-		value: string | number | boolean,
+		value: Maybe<string | number | boolean>,
 	): this {
 		return this.op(property, QueryOperator.GreaterThan, value);
+	}
+
+	/**
+	 * Appends a raw query string or another QueryBuilder's query to this builder.
+	 * @param query The query string or QueryBuilder to append.
+	 * @returns The QueryBuilder instance for chaining.
+	 */
+	public append(query: string | QueryBuilder): this {
+		if (query instanceof QueryBuilder) {
+			this.query += query.query;
+		} else {
+			this.query += query;
+		}
+		return this;
 	}
 	/**
 	 * Adds a "less than" condition.
@@ -96,7 +119,10 @@ export default class QueryBuilder {
 	 * @param value The value to compare against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public lessThan(property: string, value: string | number | boolean): this {
+	public lessThan(
+		property: string,
+		value: Maybe<string | number | boolean>,
+	): this {
 		return this.op(property, QueryOperator.LessThan, value);
 	}
 	/**
@@ -107,7 +133,7 @@ export default class QueryBuilder {
 	 */
 	public greaterThanOrEqual(
 		property: string,
-		value: string | number | boolean,
+		value: Maybe<string | number | boolean>,
 	): this {
 		return this.op(property, QueryOperator.GreaterThanOrEqual, value);
 	}
@@ -119,7 +145,7 @@ export default class QueryBuilder {
 	 */
 	public lessThanOrEqual(
 		property: string,
-		value: string | number | boolean,
+		value: Maybe<string | number | boolean>,
 	): this {
 		return this.op(property, QueryOperator.LessThanOrEqual, value);
 	}
@@ -130,7 +156,7 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public startsWith(property: string, value: string): this {
+	public startsWith(property: string, value: Maybe<string>): this {
 		return this.op(property, QueryOperator.StartsWith, value, true);
 	}
 	/**
@@ -139,7 +165,7 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public doesNotStartWith(property: string, value: string): this {
+	public doesNotStartWith(property: string, value: Maybe<string>): this {
 		return this.op(property, QueryOperator.DoesNotStartWith, value, true);
 	}
 	/**
@@ -148,7 +174,7 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public endsWith(property: string, value: string): this {
+	public endsWith(property: string, value: Maybe<string>): this {
 		return this.op(property, QueryOperator.EndsWith, value, true);
 	}
 	/**
@@ -157,7 +183,7 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public doesNotEndWith(property: string, value: string): this {
+	public doesNotEndWith(property: string, value: Maybe<string>): this {
 		return this.op(property, QueryOperator.DoesNotEndWith, value, true);
 	}
 	/**
@@ -166,7 +192,7 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public contains(property: string, value: string): this {
+	public contains(property: string, value: Maybe<string>): this {
 		return this.op(property, QueryOperator.Contains, value, true);
 	}
 	/**
@@ -175,7 +201,7 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public doesNotContain(property: string, value: string): this {
+	public doesNotContain(property: string, value: Maybe<string>): this {
 		return this.op(property, QueryOperator.DoesNotContain, value, true);
 	}
 	/**
@@ -184,7 +210,7 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public soundsLike(property: string, value: string): this {
+	public soundsLike(property: string, value: Maybe<string>): this {
 		return this.op(property, QueryOperator.SoundsLike, value, true);
 	}
 	/**
@@ -193,7 +219,7 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public doesNotSoundLike(property: string, value: string): this {
+	public doesNotSoundLike(property: string, value: Maybe<string>): this {
 		return this.op(property, QueryOperator.DoesNotSoundLike, value, true);
 	}
 
@@ -203,7 +229,10 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public has(property: string, value: string | number | boolean): this {
+	public has(
+		property: string,
+		value: Maybe<string | number | boolean>,
+	): this {
 		return this.op(property, QueryOperator.Has, value);
 	}
 	/**
@@ -214,7 +243,7 @@ export default class QueryBuilder {
 	 */
 	public doesNotHave(
 		property: string,
-		value: string | number | boolean,
+		value: Maybe<string | number | boolean>,
 	): this {
 		return this.op(property, QueryOperator.DoesNotHave, value);
 	}
@@ -225,8 +254,22 @@ export default class QueryBuilder {
 	 * @param values The values to check against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public in(property: string, values: (string | number | boolean)[]): this {
-		const valueString = values
+	public in(
+		property: string,
+		values: Maybe<Maybe<string | number | boolean>[]>,
+	): this {
+		if (!values) {
+			return this;
+		}
+		const validValues = values.filter(
+			(val) => val !== null && val !== undefined,
+		) as (string | number | boolean)[];
+
+		if (validValues.length === 0) {
+			return this;
+		}
+
+		const valueString = validValues
 			.map((val) => this.stringifyValue(val))
 			.join(',');
 		return this.addCondition(
@@ -242,7 +285,7 @@ export default class QueryBuilder {
 	 */
 	public equalsCaseInsensitive(
 		property: string,
-		value: string | number | boolean,
+		value: Maybe<string | number | boolean>,
 	): this {
 		return this.op(property, QueryOperator.EqualsCaseInsensitive, value);
 	}
@@ -254,7 +297,7 @@ export default class QueryBuilder {
 	 */
 	public notEqualsCaseInsensitive(
 		property: string,
-		value: string | number | boolean,
+		value: Maybe<string | number | boolean>,
 	): this {
 		return this.op(property, QueryOperator.NotEqualsCaseInsensitive, value);
 	}
@@ -264,7 +307,10 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public startsWithCaseInsensitive(property: string, value: string): this {
+	public startsWithCaseInsensitive(
+		property: string,
+		value: Maybe<string>,
+	): this {
 		return this.op(
 			property,
 			QueryOperator.StartsWithCaseInsensitive,
@@ -280,7 +326,7 @@ export default class QueryBuilder {
 	 */
 	public doesNotStartWithCaseInsensitive(
 		property: string,
-		value: string,
+		value: Maybe<string>,
 	): this {
 		return this.op(
 			property,
@@ -295,7 +341,10 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public endsWithCaseInsensitive(property: string, value: string): this {
+	public endsWithCaseInsensitive(
+		property: string,
+		value: Maybe<string>,
+	): this {
 		return this.op(
 			property,
 			QueryOperator.EndsWithCaseInsensitive,
@@ -311,7 +360,7 @@ export default class QueryBuilder {
 	 */
 	public doesNotEndWithCaseInsensitive(
 		property: string,
-		value: string,
+		value: Maybe<string>,
 	): this {
 		return this.op(
 			property,
@@ -326,7 +375,10 @@ export default class QueryBuilder {
 	 * @param value The value to check for.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public containsCaseInsensitive(property: string, value: string): this {
+	public containsCaseInsensitive(
+		property: string,
+		value: Maybe<string>,
+	): this {
 		return this.op(
 			property,
 			QueryOperator.ContainsCaseInsensitive,
@@ -342,7 +394,7 @@ export default class QueryBuilder {
 	 */
 	public doesNotContainCaseInsensitive(
 		property: string,
-		value: string,
+		value: Maybe<string>,
 	): this {
 		return this.op(
 			property,
@@ -359,7 +411,7 @@ export default class QueryBuilder {
 	 */
 	public hasCaseInsensitive(
 		property: string,
-		value: string | number | boolean,
+		value: Maybe<string | number | boolean>,
 	): this {
 		return this.op(property, QueryOperator.HasCaseInsensitive, value);
 	}
@@ -371,7 +423,7 @@ export default class QueryBuilder {
 	 */
 	public doesNotHaveCaseInsensitive(
 		property: string,
-		value: string | number | boolean,
+		value: Maybe<string | number | boolean>,
 	): this {
 		return this.op(
 			property,
@@ -388,9 +440,20 @@ export default class QueryBuilder {
 	 */
 	public inCaseInsensitive(
 		property: string,
-		values: (string | number | boolean)[],
+		values: Maybe<Maybe<string | number | boolean>[]>,
 	): this {
-		const valueString = values
+		if (!values) {
+			return this;
+		}
+		const validValues = values.filter(
+			(val) => val !== null && val !== undefined,
+		) as (string | number | boolean)[];
+
+		if (validValues.length === 0) {
+			return this;
+		}
+
+		const valueString = validValues
 			.map((val) => this.stringifyValue(val))
 			.join(',');
 		return this.addCondition(
@@ -403,7 +466,7 @@ export default class QueryBuilder {
 	 * @returns The QueryBuilder instance for chaining.
 	 */
 	public and(): this {
-		this.query = this.query.trim() + ' && ';
+		this.query = `${this.query.trim()} && `;
 		return this;
 	}
 	/**
@@ -411,7 +474,7 @@ export default class QueryBuilder {
 	 * @returns The QueryBuilder instance for chaining.
 	 */
 	public or(): this {
-		this.query = this.query.trim() + ' || ';
+		this.query = `${this.query.trim()} || `;
 		return this;
 	}
 	/**
@@ -443,7 +506,7 @@ export default class QueryBuilder {
 			operator && currentTrimmed !== '' && currentTrimmed !== 'Filters=';
 
 		if (shouldAddOperator) {
-			this.query = currentTrimmed + ` ${operator} `;
+			this.query = `${currentTrimmed} ${operator} `;
 		}
 
 		let otherQuery = other.query.trim();
@@ -473,7 +536,7 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public countGreaterThan(property: string, value: number): this {
+	public countGreaterThan(property: string, value: Maybe<number>): this {
 		return this.op(property, QueryOperator.CountGreaterThan, value);
 	}
 	/**
@@ -482,7 +545,7 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public countLessThan(property: string, value: number): this {
+	public countLessThan(property: string, value: Maybe<number>): this {
 		return this.op(property, QueryOperator.CountLessThan, value);
 	}
 	/**
@@ -491,7 +554,10 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public countGreaterThanOrEqual(property: string, value: number): this {
+	public countGreaterThanOrEqual(
+		property: string,
+		value: Maybe<number>,
+	): this {
 		return this.op(property, QueryOperator.CountGreaterThanOrEqual, value);
 	}
 	/**
@@ -500,7 +566,7 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public countLessThanOrEqual(property: string, value: number): this {
+	public countLessThanOrEqual(property: string, value: Maybe<number>): this {
 		return this.op(property, QueryOperator.CountLessThanOrEqual, value);
 	}
 
@@ -510,7 +576,7 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public equalsCaseCount(property: string, value: number): this {
+	public equalsCaseCount(property: string, value: Maybe<number>): this {
 		return this.op(property, QueryOperator.CountEquals, value);
 	}
 	/**
@@ -519,7 +585,7 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public notEqualsCaseCount(property: string, value: number): this {
+	public notEqualsCaseCount(property: string, value: Maybe<number>): this {
 		return this.op(property, QueryOperator.CountNotEquals, value);
 	}
 	/**
@@ -528,7 +594,7 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public greaterThanCaseCount(property: string, value: number): this {
+	public greaterThanCaseCount(property: string, value: Maybe<number>): this {
 		return this.op(property, QueryOperator.CountGreaterThan, value);
 	}
 	/**
@@ -537,7 +603,7 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public lessThanCaseCount(property: string, value: number): this {
+	public lessThanCaseCount(property: string, value: Maybe<number>): this {
 		return this.op(property, QueryOperator.CountLessThan, value);
 	}
 	/**
@@ -546,7 +612,10 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public greaterThanOrEqualCaseCount(property: string, value: number): this {
+	public greaterThanOrEqualCaseCount(
+		property: string,
+		value: Maybe<number>,
+	): this {
 		return this.op(property, QueryOperator.CountGreaterThanOrEqual, value);
 	}
 	/**
@@ -555,7 +624,10 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public lessThanOrEqualCaseCount(property: string, value: number): this {
+	public lessThanOrEqualCaseCount(
+		property: string,
+		value: Maybe<number>,
+	): this {
 		return this.op(property, QueryOperator.CountLessThanOrEqual, value);
 	}
 
@@ -565,7 +637,7 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public countEquals(property: string, value: number): this {
+	public countEquals(property: string, value: Maybe<number>): this {
 		return this.op(property, QueryOperator.CountEquals, value);
 	}
 
@@ -575,7 +647,7 @@ export default class QueryBuilder {
 	 * @param value The value to compare the count against.
 	 * @returns The QueryBuilder instance for chaining.
 	 */
-	public countNotEquals(property: string, value: number): this {
+	public countNotEquals(property: string, value: Maybe<number>): this {
 		return this.op(property, QueryOperator.CountNotEquals, value);
 	}
 

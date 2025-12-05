@@ -50,6 +50,28 @@ test('Starts with operator', () => {
 	expect(builder.build()).toBe(`City ${QueryOperator.StartsWith} "New"`);
 });
 
+test('Append operator', () => {
+	const builder = queryBuilder();
+	builder.equals('Age', 30);
+	builder.append('AND Name == "John"');
+	expect(builder.build()).toBe(
+		`Age ${QueryOperator.Equals} 30 AND Name == "John"`,
+	);
+});
+
+test('Append builder', () => {
+	const builder1 = queryBuilder();
+	builder1.equals('Age', 30);
+
+	const builder2 = queryBuilder();
+	builder2.equals('Name', 'John');
+
+	builder1.append(builder2);
+	expect(builder1.build()).toBe(
+		`Age ${QueryOperator.Equals} 30 Name ${QueryOperator.Equals} "John"`,
+	);
+});
+
 test('Does not start with operator', () => {
 	const builder = queryBuilder();
 	builder.doesNotStartWith('Country', 'Uni');
