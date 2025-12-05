@@ -11,6 +11,9 @@
 	"author": "notlimey",
 	"license": "ISC",
 	"type": "commonjs",
+	"engines": {
+		"node": ">=22"
+	},
 	"scripts": {
 		"build": "tsc --outDir dist",
 		"prepublish": "pnpm run build",

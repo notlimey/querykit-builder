@@ -11,6 +11,9 @@
 		"build": "tsc",
 		"prepublishOnly": "npm run build"
 	},
+	"engines": {
+		"node": ">=22"
+	},
 	"keywords": [],
 	"author": "notlimey",
 	"license": "ISC",
