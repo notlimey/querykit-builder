@@ -20,7 +20,7 @@ describe('useQueryBuilder', () => {
 		const { result, rerender } = renderHook(
 			({ filters }) => useQueryBuilder(filters),
 			{
-				initialProps: { filters: ['Status == "Open"'] as const },
+				initialProps: { filters: ['Status == "Open"'] },
 			},
 		);
 
@@ -39,7 +39,7 @@ describe('useQueryBuilder', () => {
 		);
 
 		// Same values, new array identity: should not rebuild/reset
-		rerender({ filters: ['Status == "Open"'] as const });
+		rerender({ filters: ['Status == "Open"'] });
 		expect(result.current.query).toBe(
 			'Status == "Open" && Priority == "High" && Team == "A"',
 		);
@@ -49,7 +49,7 @@ describe('useQueryBuilder', () => {
 		const { result, rerender } = renderHook(
 			({ filters }) => useQueryBuilder(filters),
 			{
-				initialProps: { filters: ['Status == "Open"'] as const },
+				initialProps: { filters: ['Status == "Open"'] },
 			},
 		);
 

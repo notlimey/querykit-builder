@@ -1,5 +1,13 @@
 # react-querykit-builder
 
+## 0.0.16
+
+### Patch Changes
+
+- Updated documentation
+- Updated dependencies
+  - querykit-builder@0.0.16
+
 ## 0.0.5
 
 ### Patch Changes

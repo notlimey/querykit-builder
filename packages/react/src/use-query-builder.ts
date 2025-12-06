@@ -5,12 +5,8 @@ import {
 	serializeQueryInput,
 } from './reactive-query-builder';
 
-type QueryInput =
-	| string
-	| QueryBuilder
-	| null
-	| undefined
-	| (string | QueryBuilder | null | undefined)[];
+type QueryValue = string | QueryBuilder | null | undefined;
+type QueryInput = QueryValue | readonly QueryValue[];
 
 type UseQueryBuilderOptions = QueryBuilderOptions & {
 	joinOperator?: '&&' | '||';

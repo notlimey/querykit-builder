@@ -1,5 +1,11 @@
 # querykit-builder
 
+## 0.0.16
+
+### Patch Changes
+
+- Updated documentation
+
 ## 0.0.10
 
 ### Patch Changes

@@ -69,15 +69,17 @@ export class ReactiveQueryBuilder extends QueryBuilder {
 type SerializableInput = string | QueryBuilder | null | undefined;
 
 export const serializeQueryInput = (
-	input: SerializableInput | SerializableInput[],
+	input: SerializableInput | readonly SerializableInput[],
 ): string => {
+	const isArray = (
+		value: SerializableInput | readonly SerializableInput[],
+	): value is readonly SerializableInput[] => Array.isArray(value);
+
 	const serialize = (item: SerializableInput) => {
 		if (!item) return '';
 		if (item instanceof QueryBuilder) return `builder:${item.build()}`;
 		return `str:${item}`;
 	};
 
-	return Array.isArray(input)
-		? input.map(serialize).join('|')
-		: serialize(input);
+	return isArray(input) ? input.map(serialize).join('|') : serialize(input);
 };

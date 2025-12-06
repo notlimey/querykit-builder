@@ -47,6 +47,32 @@ const MyComponent = () => {
 };
 ```
 
+#### Simple Widget filter
+
+```typescript
+const { query } = useQueryBuilder(['User.Id == 5', 'User.Name @= "not"']);
+// query => 'User.Id == 5 && User.Name @= "not"'
+```
+
+#### Advanced composition with context + props
+
+```typescript
+const { query } = useQueryBuilder(
+  [
+    filters.events, // from context
+    new QueryBuilder().equals('Team.Id', teamId ?? ''),
+    incomingFilterFromProps,
+  ],
+  { addFilterStatement: false, encodeUri: false },
+);
+// Automatically re-composes when any piece changes, while preserving user edits
+```
+
+#### Limitations / gotchas
+
+- If you mutate the provided builder outside of the hook return, the hook only stays in sync because it wraps a reactive builder; prefer `update` for clarity.
+- Inline array inputs are compared by value; avoid mutating the same `QueryBuilder` instance without changing its identity if you rely on `initialQuery` changes to rebuild.
+
 #### Chaining Hooks (Composition)
 
 You can easily compose queries from multiple sources (e.g., context, props, internal logic) by passing an array to `useQueryBuilder`. This is particularly useful for creating specialized hooks that build upon each other.
