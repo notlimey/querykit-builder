@@ -336,3 +336,22 @@ test('Append builder with Filters=', () => {
 	builder1.append(builder2, '&&');
 	expect(builder1.build()).toBe('Age == 30 && Name == "John"');
 });
+
+test('Trailing operator is trimmed when no condition follows', () => {
+	const builder = queryBuilder();
+	builder.equals('Age', 30).and();
+	expect(builder.build()).toBe('Age == 30');
+});
+
+test('Append does not duplicate logical operator', () => {
+	const builder = queryBuilder();
+	builder.equals('Age', 30).and();
+	builder.append('Name == "John"', '&&');
+	expect(builder.build()).toBe('Age == 30 && Name == "John"');
+});
+
+test('Escapes quotes inside string values', () => {
+	const builder = queryBuilder();
+	builder.equals('Name', 'Bob "The Man"');
+	expect(builder.build()).toBe('Name == "Bob \\"The Man\\""');
+});

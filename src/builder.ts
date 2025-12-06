@@ -53,7 +53,8 @@ export default class QueryBuilder {
 	 */
 	private stringifyValue(value: string | number | boolean): string {
 		if (typeof value === 'string') {
-			return `"${value}"`;
+			const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+			return `"${escaped}"`;
 		}
 		return value.toString();
 	}
@@ -75,7 +76,9 @@ export default class QueryBuilder {
 		if (value === null || value === undefined) {
 			return this;
 		}
-		const valStr = forceQuote ? `"${value}"` : this.stringifyValue(value);
+		const valStr = forceQuote
+			? this.stringifyValue(String(value))
+			: this.stringifyValue(value);
 		return this.addCondition(`${property} ${operator} ${valStr}`);
 	}
 
@@ -136,8 +139,14 @@ export default class QueryBuilder {
 		}
 
 		const currentTrimmed = this.query.trim();
+		const endsWithOperator =
+			currentTrimmed.endsWith('&&') || currentTrimmed.endsWith('||');
 		const shouldAddOperator =
-			operator && currentTrimmed !== '' && currentTrimmed !== 'Filters=';
+			operator &&
+			currentTrimmed !== '' &&
+			currentTrimmed !== 'Filters=' &&
+			!currentTrimmed.endsWith('(') &&
+			!endsWithOperator;
 
 		if (shouldAddOperator) {
 			this.query = `${currentTrimmed} ${operator} `;
@@ -737,7 +746,6 @@ export default class QueryBuilder {
 	public countEquals(property: string, value: Maybe<number>): this {
 		return this.op(property, QueryOperator.CountEquals, value);
 	}
-
 	/**
 	 * Adds a "count not equals" condition.
 	 * @param property The property to count.
@@ -753,7 +761,13 @@ export default class QueryBuilder {
 	 * @returns The completed query string.
 	 */
 	public build(): string {
-		const finalQuery = this.query.trim();
+		let finalQuery = this.query.trim();
+
+		// Drop trailing logical operators that were left after skipped conditions
+		if (finalQuery.endsWith('&&') || finalQuery.endsWith('||')) {
+			finalQuery = finalQuery.replace(/(?:\s*(?:&&|\|\|))+$/, '').trim();
+		}
+
 		return this.encodeURI ? encodeURIComponent(finalQuery) : finalQuery;
 	}
 }

@@ -1,6 +1,9 @@
-import type { QueryBuilderOptions } from 'querykit-builder';
-import { QueryBuilder } from 'querykit-builder';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { QueryBuilder, QueryBuilderOptions } from 'querykit-builder';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+	ReactiveQueryBuilder,
+	serializeQueryInput,
+} from './reactive-query-builder';
 
 type QueryInput =
 	| string
@@ -21,25 +24,41 @@ export function useQueryBuilder(
 		joinOperator = '&&',
 	}: UseQueryBuilderOptions = {},
 ) {
-	const builderRef = useRef<QueryBuilder | null>(null);
+	const builderRef = useRef<ReactiveQueryBuilder | null>(null);
 
-	const createBuilder = useCallback(() => {
-		const builder = new QueryBuilder(encodeUri, addFilterStatement);
-		const inputs = Array.isArray(initialQuery)
-			? initialQuery
-			: [initialQuery];
+	const serializedInitial = useMemo(
+		() => serializeQueryInput(initialQuery),
+		[initialQuery],
+	);
 
-		for (const input of inputs) {
-			if (input) builder.append(input, joinOperator);
-		}
-		return builder;
-	}, [initialQuery, encodeUri, addFilterStatement, joinOperator]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: we key on serializedInitial so inline array identities don't churn the builder; initialQuery is read inside but only matters when its serialized value changes.
+	const normalizedInputs = useMemo(
+		() => (Array.isArray(initialQuery) ? initialQuery : [initialQuery]),
+		[serializedInitial],
+	);
 
-	if (!builderRef.current) {
-		builderRef.current = createBuilder();
-	}
+	const makeBuilder = useCallback(
+		(onChange?: () => void) => {
+			const builder = new ReactiveQueryBuilder(
+				encodeUri,
+				addFilterStatement,
+			);
 
-	const [query, setQuery] = useState(() => builderRef.current!.build());
+			for (const input of normalizedInputs) {
+				if (input) builder.append(input, joinOperator);
+			}
+
+			builder.setOnChange(onChange);
+			return builder;
+		},
+		[normalizedInputs, encodeUri, addFilterStatement, joinOperator],
+	);
+
+	const [query, setQuery] = useState(() => {
+		const builder = makeBuilder();
+		builderRef.current = builder;
+		return builder.build();
+	});
 
 	const sync = useCallback(() => {
 		if (builderRef.current) {
@@ -48,9 +67,20 @@ export function useQueryBuilder(
 	}, []);
 
 	useEffect(() => {
-		builderRef.current = createBuilder();
-		sync();
-	}, [createBuilder, sync]);
+		if (builderRef.current) {
+			builderRef.current.setOnChange(sync);
+		}
+	}, [sync]);
+
+	const initializedRef = useRef(false);
+	useEffect(() => {
+		if (initializedRef.current) {
+			builderRef.current = makeBuilder(sync);
+			setQuery(builderRef.current.build());
+		} else {
+			initializedRef.current = true;
+		}
+	}, [makeBuilder, sync]);
 
 	const update = useCallback(
 		(action: (builder: QueryBuilder) => void) => {
@@ -63,9 +93,9 @@ export function useQueryBuilder(
 	);
 
 	const reset = useCallback(() => {
-		builderRef.current = createBuilder();
+		builderRef.current = makeBuilder(sync);
 		sync();
-	}, [createBuilder, sync]);
+	}, [makeBuilder, sync]);
 
 	return {
 		query,
