@@ -24,6 +24,14 @@ test('respects Filters= prefix removal when appending', () => {
 	expect(lhs.build()).toBe('Age == 30 && Name == "John"');
 });
 
+test('adds operator when appending after Filters= prefix', () => {
+	const builder = new QueryBuilder(false, true);
+
+	builder.append('Status == "Open"', '&&');
+
+	expect(builder.build()).toBe('Filters= && Status == "Open"');
+});
+
 test('trims trailing operators', () => {
 	const builder = qb();
 	builder.equals('Age', 30).and();
@@ -43,4 +51,13 @@ test('open/close paren with concat builds grouped clauses', () => {
 
 	const combined = qb().concat(left).and().concat(right);
 	expect(combined.build()).toBe('((User.Id == 5 || User.Id == 6 )) && ((Status == "Active" && User.Name @= "not" ))');
+});
+
+test('concat inserts operator after Filters= when provided', () => {
+	const base = new QueryBuilder(false, true);
+	const rhs = qb().equals('Status', 'Active');
+
+	base.concat(rhs, '&&');
+
+	expect(base.build()).toBe('Filters= && (Status == "Active")');
 });

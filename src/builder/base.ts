@@ -86,7 +86,6 @@ export class BaseQueryBuilder {
 			const shouldAddOperator =
 				operator &&
 				currentTrimmed !== '' &&
-				currentTrimmed !== 'Filters=' &&
 				!currentTrimmed.endsWith('(') &&
 				!endsWithOperator;
 
@@ -95,7 +94,6 @@ export class BaseQueryBuilder {
 				this.tokens.push({ type: 'logical', operator });
 			} else if (
 				currentTrimmed !== '' &&
-				currentTrimmed !== 'Filters=' &&
 				!currentTrimmed.endsWith('(')
 			) {
 				this.query = `${currentTrimmed} `;
@@ -189,7 +187,7 @@ export class BaseQueryBuilder {
 	public concat(other: BaseQueryBuilder, operator?: '&&' | '||'): this {
 		const currentTrimmed = this.query.trim();
 		const shouldAddOperator =
-			operator && currentTrimmed !== '' && currentTrimmed !== 'Filters=';
+			operator && currentTrimmed !== '';
 
 		if (shouldAddOperator) {
 			this.query = `${currentTrimmed} ${operator} `;
