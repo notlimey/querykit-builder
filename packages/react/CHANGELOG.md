@@ -1,5 +1,11 @@
 # react-querykit-builder
 
+## 0.0.17
+
+### Patch Changes
+
+- Replace manual ReactiveQueryBuilder subclass with a Proxy that auto-detects mutations, and simplify the hook internals.
+
 ## 0.0.16
 
 ### Patch Changes
