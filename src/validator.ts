@@ -1,6 +1,8 @@
 import { QueryOperator } from './types';
 
-export type ValidationResult = { valid: true } | { valid: false; errors: string[] };
+export type ValidationResult =
+	| { valid: true }
+	| { valid: false; errors: string[] };
 
 const logicalOperators = new Set(['&&', '||']);
 const operators = new Set(Object.values(QueryOperator));
@@ -52,7 +54,9 @@ export function validateQuery(query: string): ValidationResult {
 				continue;
 			}
 
-			errors.push(`Expected condition at token ${i + 1}, found "${token}"`);
+			errors.push(
+				`Expected condition at token ${i + 1}, found "${token}"`,
+			);
 			break;
 		}
 
@@ -71,7 +75,9 @@ export function validateQuery(query: string): ValidationResult {
 			continue;
 		}
 
-		errors.push(`Expected "&&" or "||" at token ${i + 1}, found "${token}"`);
+		errors.push(
+			`Expected "&&" or "||" at token ${i + 1}, found "${token}"`,
+		);
 		break;
 	}
 

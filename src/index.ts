@@ -1,5 +1,5 @@
-export { default as QueryBuilder } from './builder';
 export type { QueryBuilderOptions } from './builder';
-export * from './types';
+export { default as QueryBuilder } from './builder';
 export * from './builder/ast';
-export { validateQuery, type ValidationResult } from './validator';
+export * from './types';
+export { type ValidationResult, validateQuery } from './validator';

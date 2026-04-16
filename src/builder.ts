@@ -6,4 +6,4 @@ import { CountQueryBuilder } from './builder/operators-count';
  */
 export default class QueryBuilder extends CountQueryBuilder {}
 
-export { QueryBuilderOptions, BaseQueryBuilder };
+export { type QueryBuilderOptions, BaseQueryBuilder };

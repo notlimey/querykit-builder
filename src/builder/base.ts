@@ -1,5 +1,5 @@
 import { type Maybe, QueryOperator } from '../types';
-import type { QueryToken, ArrayConditionToken } from './ast';
+import type { ArrayConditionToken, QueryToken } from './ast';
 
 export interface QueryBuilderOptions {
 	/**
@@ -20,11 +20,16 @@ export interface QueryBuilderOptions {
 export class BaseQueryBuilder {
 	protected query: string;
 	protected encodeURI: boolean;
+	protected addFilterStatement: boolean;
 	protected tokens: QueryToken[];
 
-	constructor(encodeUri: boolean = false, addFilterStatement: boolean = false) {
+	constructor(
+		encodeUri: boolean = false,
+		addFilterStatement: boolean = false,
+	) {
 		this.query = '';
 		this.encodeURI = encodeUri;
+		this.addFilterStatement = addFilterStatement;
 		this.tokens = [];
 		if (addFilterStatement) {
 			this.query += 'Filters= ';
@@ -32,7 +37,7 @@ export class BaseQueryBuilder {
 		}
 	}
 
-	public addCondition(condition: string): this {
+	protected addCondition(condition: string): this {
 		this.query += `${condition} `;
 		return this;
 	}
@@ -66,58 +71,18 @@ export class BaseQueryBuilder {
 		return this.addCondition(`${property} ${operator} ${valStr}`);
 	}
 
-	public append(
-		query: string | BaseQueryBuilder,
-		operator?: '&&' | '||',
-	): this {
-		let q = query instanceof BaseQueryBuilder ? query.query : query;
-
-		if (!q.trim()) {
-			return this;
-		}
-
-		if (q.startsWith('Filters=')) {
-			q = q.replace(/^Filters=\s*/, '');
-		}
-
-		const currentTrimmed = this.query.trim();
-		const endsWithOperator =
-			currentTrimmed.endsWith('&&') || currentTrimmed.endsWith('||');
-			const shouldAddOperator =
-				operator &&
-				currentTrimmed !== '' &&
-				!currentTrimmed.endsWith('(') &&
-				!endsWithOperator;
-
-			if (shouldAddOperator) {
-				this.query = `${currentTrimmed} ${operator} `;
-				this.tokens.push({ type: 'logical', operator });
-			} else if (
-				currentTrimmed !== '' &&
-				!currentTrimmed.endsWith('(')
-			) {
-				this.query = `${currentTrimmed} `;
-			}
-
-			this.query += q;
-			this.tokens.push({ type: 'raw', value: q });
-			return this;
-		}
-
-	public in(
+	protected opArray(
 		property: string,
+		operator: QueryOperator,
 		values: Maybe<Maybe<string | number | boolean>[]>,
 	): this {
-		if (!values) {
-			return this;
-		}
-		const validValues = values.filter(
-			(val) => val !== null && val !== undefined,
-		) as (string | number | boolean)[];
+		if (!values) return this;
 
-		if (validValues.length === 0) {
-			return this;
-		}
+		const validValues = values.filter(
+			(val): val is string | number | boolean =>
+				val !== null && val !== undefined,
+		);
+		if (validValues.length === 0) return this;
 
 		const valueString = validValues
 			.map((val) => this.stringifyValue(val))
@@ -125,39 +90,56 @@ export class BaseQueryBuilder {
 		this.tokens.push({
 			type: 'conditionArray',
 			property,
-			operator: QueryOperator.In,
+			operator,
 			values: validValues,
 		} satisfies ArrayConditionToken);
-		return this.addCondition(`${property} ${QueryOperator.In} [${valueString}]`);
+		return this.addCondition(`${property} ${operator} [${valueString}]`);
+	}
+
+	public append(
+		query: string | BaseQueryBuilder,
+		operator?: '&&' | '||',
+	): this {
+		let q = query instanceof BaseQueryBuilder ? query.query : query;
+		if (!q.trim()) return this;
+
+		if (q.startsWith('Filters=')) {
+			q = q.replace(/^Filters=\s*/, '');
+		}
+
+		const current = this.query.trim();
+		const endsWithOperator =
+			current.endsWith('&&') || current.endsWith('||');
+
+		if (
+			operator &&
+			current !== '' &&
+			!current.endsWith('(') &&
+			!endsWithOperator
+		) {
+			this.query = `${current} ${operator} `;
+			this.tokens.push({ type: 'logical', operator });
+		} else if (current !== '' && !current.endsWith('(')) {
+			this.query = `${current} `;
+		}
+
+		this.query += q;
+		this.tokens.push({ type: 'raw', value: q });
+		return this;
+	}
+
+	public in(
+		property: string,
+		values: Maybe<Maybe<string | number | boolean>[]>,
+	): this {
+		return this.opArray(property, QueryOperator.In, values);
 	}
 
 	public notIn(
 		property: string,
 		values: Maybe<Maybe<string | number | boolean>[]>,
 	): this {
-		if (!values) {
-			return this;
-		}
-		const validValues = values.filter(
-			(val) => val !== null && val !== undefined,
-		) as (string | number | boolean)[];
-
-		if (validValues.length === 0) {
-			return this;
-		}
-
-		const valueString = validValues
-			.map((val) => this.stringifyValue(val))
-			.join(',');
-		this.tokens.push({
-			type: 'conditionArray',
-			property,
-			operator: QueryOperator.NotIn,
-			values: validValues,
-		} satisfies ArrayConditionToken);
-		return this.addCondition(
-			`${property} ${QueryOperator.NotIn} [${valueString}]`,
-		);
+		return this.opArray(property, QueryOperator.NotIn, values);
 	}
 
 	public and(): this {
@@ -186,8 +168,7 @@ export class BaseQueryBuilder {
 
 	public concat(other: BaseQueryBuilder, operator?: '&&' | '||'): this {
 		const currentTrimmed = this.query.trim();
-		const shouldAddOperator =
-			operator && currentTrimmed !== '';
+		const shouldAddOperator = operator && currentTrimmed !== '';
 
 		if (shouldAddOperator) {
 			this.query = `${currentTrimmed} ${operator} `;
@@ -209,12 +190,12 @@ export class BaseQueryBuilder {
 		const BuilderCtor = this.constructor as new (
 			encodeUri?: boolean,
 			addFilterStatement?: boolean,
-			) => BaseQueryBuilder;
-			const cloned = new BuilderCtor(this.encodeURI, false);
-			cloned.query = this.query;
-			cloned.tokens = [...this.tokens];
-			return cloned;
-		}
+		) => BaseQueryBuilder;
+		const cloned = new BuilderCtor(this.encodeURI, this.addFilterStatement);
+		cloned.query = this.query;
+		cloned.tokens = [...this.tokens];
+		return cloned;
+	}
 
 	public build(): string {
 		let finalQuery = this.query.trim();

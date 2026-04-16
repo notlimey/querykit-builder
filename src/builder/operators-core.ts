@@ -1,5 +1,5 @@
-import { BaseQueryBuilder } from './base';
 import { type Maybe, QueryOperator } from '../types';
+import { BaseQueryBuilder } from './base';
 
 export class CoreQueryBuilder extends BaseQueryBuilder {
 	public equals(

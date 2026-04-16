@@ -1,5 +1,11 @@
 # querykit-builder
 
+## 0.0.17
+
+### Patch Changes
+
+- Remove duplicate count methods, fix missing tokens on case-insensitive in/notIn, fix clone losing addFilterStatement, and make addCondition protected.
+
 ## 0.0.16
 
 ### Patch Changes

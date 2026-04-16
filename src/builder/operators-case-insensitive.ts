@@ -1,5 +1,5 @@
-import { CoreQueryBuilder } from './operators-core';
 import { type Maybe, QueryOperator } from '../types';
+import { CoreQueryBuilder } from './operators-core';
 
 export class CaseInsensitiveQueryBuilder extends CoreQueryBuilder {
 	public equalsCaseInsensitive(
@@ -110,45 +110,17 @@ export class CaseInsensitiveQueryBuilder extends CoreQueryBuilder {
 		property: string,
 		values: Maybe<Maybe<string | number | boolean>[]>,
 	): this {
-		if (!values) {
-			return this;
-		}
-		const validValues = values.filter(
-			(val) => val !== null && val !== undefined,
-		) as (string | number | boolean)[];
-
-		if (validValues.length === 0) {
-			return this;
-		}
-
-		const valueString = validValues
-			.map((val) => this.stringifyValue(val))
-			.join(',');
-		return this.addCondition(
-			`${property} ${QueryOperator.InCaseInsensitive} [${valueString}]`,
-		);
+		return this.opArray(property, QueryOperator.InCaseInsensitive, values);
 	}
 
 	public notInCaseInsensitive(
 		property: string,
 		values: Maybe<Maybe<string | number | boolean>[]>,
 	): this {
-		if (!values) {
-			return this;
-		}
-		const validValues = values.filter(
-			(val) => val !== null && val !== undefined,
-		) as (string | number | boolean)[];
-
-		if (validValues.length === 0) {
-			return this;
-		}
-
-		const valueString = validValues
-			.map((val) => this.stringifyValue(val))
-			.join(',');
-		return this.addCondition(
-			`${property} ${QueryOperator.NotInCaseInsensitive} [${valueString}]`,
+		return this.opArray(
+			property,
+			QueryOperator.NotInCaseInsensitive,
+			values,
 		);
 	}
 }

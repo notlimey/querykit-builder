@@ -22,13 +22,13 @@
 	"devDependencies": {
 		"@types/react": "^19.2.7",
 		"@types/react-dom": "^19.2.3",
-		"querykit-builder": "^0.0.16",
+		"querykit-builder": "^0.0.17",
 		"react": "^19.2.1",
 		"react-dom": "^19.2.1",
 		"typescript": "^5.9.3"
 	},
 	"peerDependencies": {
-		"querykit-builder": ">=0.0.16",
+		"querykit-builder": ">=0.0.17",
 		"react": ">=16.8.0",
 		"react-dom": ">=16.8.0"
 	},

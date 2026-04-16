@@ -1,97 +1,108 @@
 import type { QueryBuilder, QueryBuilderOptions } from 'querykit-builder';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-	ReactiveQueryBuilder,
-	serializeQueryInput,
+	createObservableBuilder,
+	type ObservableBuilder,
+	SET_ON_CHANGE,
+	serializeInput,
 } from './reactive-query-builder';
 
-type QueryValue = string | QueryBuilder | null | undefined;
-type QueryInput = QueryValue | readonly QueryValue[];
+type QueryFragment = string | QueryBuilder | null | undefined;
+type QueryInput = QueryFragment | readonly QueryFragment[];
+type BuilderFn = (builder: QueryBuilder) => QueryBuilder | undefined;
 
 type UseQueryBuilderOptions = QueryBuilderOptions & {
 	joinOperator?: '&&' | '||';
 };
 
 export function useQueryBuilder(
-	initialQuery: QueryInput = '',
+	initialQuery: QueryInput | BuilderFn = '',
 	{
 		encodeUri,
 		addFilterStatement,
 		joinOperator = '&&',
 	}: UseQueryBuilderOptions = {},
 ) {
-	const builderRef = useRef<ReactiveQueryBuilder | null>(null);
+	const isBuilderFn = typeof initialQuery === 'function';
 
-	const serializedInitial = useMemo(
-		() => serializeQueryInput(initialQuery),
+	const builderFnRef = useRef<BuilderFn | null>(
+		isBuilderFn ? (initialQuery as BuilderFn) : null,
+	);
+	if (isBuilderFn) builderFnRef.current = initialQuery as BuilderFn;
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: function identity doesn't matter — tracked via builderFnRef
+	const inputKey = useMemo(
+		() =>
+			isBuilderFn ? '__fn__' : serializeInput(initialQuery as QueryInput),
 		[initialQuery],
 	);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: we key on serializedInitial so inline array identities don't churn the builder; initialQuery is read inside but only matters when its serialized value changes.
-	const normalizedInputs = useMemo(
-		() => (Array.isArray(initialQuery) ? initialQuery : [initialQuery]),
-		[serializedInitial],
-	);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: keyed on inputKey to avoid rebuilds from new array references with same contents
+	const inputFragments = useMemo(() => {
+		if (isBuilderFn) return [] as const;
+		const q = initialQuery as QueryInput;
+		return Array.isArray(q) ? q : [q];
+	}, [inputKey]);
 
-	const makeBuilder = useCallback(
-		(onChange?: () => void) => {
-			const builder = new ReactiveQueryBuilder(
-				encodeUri,
-				addFilterStatement,
-			);
+	const builderRef = useRef<ObservableBuilder | null>(null);
 
-			for (const input of normalizedInputs) {
-				if (input) builder.append(input, joinOperator);
+	const populateBuilder = useCallback(
+		(builder: QueryBuilder) => {
+			if (builderFnRef.current) {
+				builderFnRef.current(builder);
+				return;
 			}
-
-			builder.setOnChange(onChange);
-			return builder;
+			for (const fragment of inputFragments) {
+				if (fragment) builder.append(fragment, joinOperator);
+			}
 		},
-		[normalizedInputs, encodeUri, addFilterStatement, joinOperator],
+		[inputFragments, joinOperator],
 	);
 
 	const [query, setQuery] = useState(() => {
-		const builder = makeBuilder();
+		const builder = createObservableBuilder(encodeUri, addFilterStatement);
+		populateBuilder(builder);
 		builderRef.current = builder;
 		return builder.build();
 	});
 
-	const sync = useCallback(() => {
+	const hasMountedRef = useRef(false);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: inputKey and joinOperator drive rebuilds via populateBuilder
+	useEffect(() => {
+		if (!hasMountedRef.current) {
+			hasMountedRef.current = true;
+			builderRef.current?.[SET_ON_CHANGE](() =>
+				setQuery(builderRef.current?.build() ?? ''),
+			);
+			return;
+		}
+		const builder = createObservableBuilder(encodeUri, addFilterStatement);
+		populateBuilder(builder);
+		builder[SET_ON_CHANGE](() => setQuery(builder.build()));
+		builderRef.current = builder;
+		setQuery(builder.build());
+	}, [
+		inputKey,
+		encodeUri,
+		addFilterStatement,
+		joinOperator,
+		populateBuilder,
+	]);
+
+	const update = useCallback((action: (builder: QueryBuilder) => void) => {
 		if (builderRef.current) {
+			action(builderRef.current);
 			setQuery(builderRef.current.build());
 		}
 	}, []);
 
-	useEffect(() => {
-		if (builderRef.current) {
-			builderRef.current.setOnChange(sync);
-		}
-	}, [sync]);
-
-	const initializedRef = useRef(false);
-	useEffect(() => {
-		if (initializedRef.current) {
-			builderRef.current = makeBuilder(sync);
-			setQuery(builderRef.current.build());
-		} else {
-			initializedRef.current = true;
-		}
-	}, [makeBuilder, sync]);
-
-	const update = useCallback(
-		(action: (builder: QueryBuilder) => void) => {
-			if (builderRef.current) {
-				action(builderRef.current);
-				sync();
-			}
-		},
-		[sync],
-	);
-
 	const reset = useCallback(() => {
-		builderRef.current = makeBuilder(sync);
-		sync();
-	}, [makeBuilder, sync]);
+		const builder = createObservableBuilder(encodeUri, addFilterStatement);
+		populateBuilder(builder);
+		builder[SET_ON_CHANGE](() => setQuery(builder.build()));
+		builderRef.current = builder;
+		setQuery(builder.build());
+	}, [encodeUri, addFilterStatement, populateBuilder]);
 
 	return {
 		query,
