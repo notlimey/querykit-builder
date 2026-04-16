@@ -13,6 +13,8 @@ type BuilderFn = (builder: QueryBuilder) => QueryBuilder | undefined;
 
 type UseQueryBuilderOptions = QueryBuilderOptions & {
 	joinOperator?: '&&' | '||';
+	/** Dependency array for builder functions. When any value changes, the builder is recreated. */
+	deps?: unknown[];
 };
 
 export function useQueryBuilder(
@@ -21,6 +23,7 @@ export function useQueryBuilder(
 		encodeUri,
 		addFilterStatement,
 		joinOperator = '&&',
+		deps,
 	}: UseQueryBuilderOptions = {},
 ) {
 	const isBuilderFn = typeof initialQuery === 'function';
@@ -30,11 +33,15 @@ export function useQueryBuilder(
 	);
 	if (isBuilderFn) builderFnRef.current = initialQuery as BuilderFn;
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: function identity doesn't matter — tracked via builderFnRef
+	const depsKey = deps ? JSON.stringify(deps) : undefined;
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: function identity doesn't matter — tracked via builderFnRef; depsKey serializes deps by value
 	const inputKey = useMemo(
 		() =>
-			isBuilderFn ? '__fn__' : serializeInput(initialQuery as QueryInput),
-		[initialQuery],
+			isBuilderFn
+				? (depsKey ?? '__fn__')
+				: serializeInput(initialQuery as QueryInput),
+		[initialQuery, depsKey],
 	);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: keyed on inputKey to avoid rebuilds from new array references with same contents

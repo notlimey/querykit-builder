@@ -1,5 +1,11 @@
 # react-querykit-builder
 
+## 0.0.18
+
+### Patch Changes
+
+- Added dependencies to the react hook
+
 ## 0.0.17
 
 ### Patch Changes

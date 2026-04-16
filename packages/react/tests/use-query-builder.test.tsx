@@ -72,6 +72,34 @@ describe('useQueryBuilder', () => {
 		expect(result.current.query).toBe('City == "NYC" && Name _= "Bo"');
 	});
 
+	it('rebuilds builder function when deps change', () => {
+		const { result, rerender } = renderHook(
+			({ status, league }) =>
+				useQueryBuilder(
+					(builder) => {
+						builder.equals('Status', status);
+						if (league) builder.and().equals('LeagueId', league);
+					},
+					{ deps: [status, league] },
+				),
+			{
+				initialProps: { status: 'Open', league: '' },
+			},
+		);
+
+		expect(result.current.query).toBe('Status == "Open"');
+
+		rerender({ status: 'Open', league: 'L1' });
+		expect(result.current.query).toBe(
+			'Status == "Open" && LeagueId == "L1"',
+		);
+
+		rerender({ status: 'Closed', league: 'L1' });
+		expect(result.current.query).toBe(
+			'Status == "Closed" && LeagueId == "L1"',
+		);
+	});
+
 	it('builds combined user filters (id equals 5 and name contains "not")', () => {
 		const { result } = renderHook(() => useQueryBuilder());
 
