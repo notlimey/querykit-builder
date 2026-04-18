@@ -9,7 +9,7 @@ import {
 
 type QueryFragment = string | QueryBuilder | null | undefined;
 type QueryInput = QueryFragment | readonly QueryFragment[];
-type BuilderFn = (builder: QueryBuilder) => QueryBuilder | undefined;
+type BuilderFn = (builder: QueryBuilder) => QueryBuilder | void;
 
 type UseQueryBuilderOptions = QueryBuilderOptions & {
 	joinOperator?: '&&' | '||';
