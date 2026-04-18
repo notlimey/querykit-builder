@@ -1,5 +1,11 @@
 # react-querykit-builder
 
+## 0.0.19
+
+### Patch Changes
+
+- Changed type from undefined -> void function
+
 ## 0.0.18
 
 ### Patch Changes
