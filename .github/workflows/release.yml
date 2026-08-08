@@ -1,9 +1,12 @@
 name: Release
 
+# Auto-release on push is disabled — publishing is done manually for now.
+# Re-enable by restoring the `push` trigger below.
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -31,6 +34,11 @@ jobs:
 
       - name: Install Dependencies
         run: pnpm install --no-frozen-lockfile
+
+      # Topological build: react-querykit-builder's tsc run needs the core
+      # package's dist/*.d.ts, which the workspace link points at.
+      - name: Build Packages
+        run: pnpm -r --include-workspace-root build
 
       - name: Create Release Pull Request or Publish
         id: changesets
