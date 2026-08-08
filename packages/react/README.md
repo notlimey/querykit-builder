@@ -40,6 +40,32 @@ export function TicketsFilters() {
 
 The hook accepts either a string or an array of strings/`QueryBuilder` instances as the initial filter. When you pass multiple initial filters, they are joined with `&&` by default.
 
+Every core builder operation is available inside `update`, including property list
+grouping, `prop()` comparisons, `arith()` expressions and null checks:
+
+```tsx
+import { arith, prop } from 'querykit-builder';
+import { useQueryBuilder } from 'react-querykit-builder';
+
+const { query, update } = useQueryBuilder();
+
+// search box across several fields
+update((qb) => qb.containsCaseInsensitive(['FirstName', 'LastName', 'Email'], term));
+// (FirstName, LastName, Email) @=* "..."
+
+update((qb) => qb.and().isNull('DeletedAt'));
+// ... && DeletedAt == null
+
+update((qb) => qb.and().greaterThan(arith('Price', '*', 'Quantity'), 1000));
+// ... && (Price * Quantity) > 1000
+
+update((qb) => qb.and().notEquals('FirstName', prop('LastName')));
+// ... && FirstName != LastName
+```
+
+Sorting lives in the core package (`SortBuilder`) and is not React-stateful; build it
+alongside the filter and pass both to your API call.
+
 ## API
 
 `useQueryBuilder(initialQuery?: QueryInput, options?: UseQueryBuilderOptions)`

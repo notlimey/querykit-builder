@@ -1,6 +1,6 @@
+import { faker } from '@faker-js/faker';
 import { expect, test } from 'vitest';
 import QueryBuilder from '../../src/builder';
-import { faker } from '@faker-js/faker';
 
 const qb = () => new QueryBuilder(false, false);
 
@@ -35,7 +35,7 @@ test('nested precedence example with explicit grouping', () => {
 		.closeParen();
 
 	expect(builder.build()).toBe(
-		`(User.Id == ${idA} || User.Id == ${idB} ) && (User.Name @= "${nameFragment}" || User.Email _-= "@${domain}" )`,
+		`(User.Id == ${idA} || User.Id == ${idB}) && (User.Name @= "${nameFragment}" || User.Email _-= "@${domain}")`,
 	);
 });
 

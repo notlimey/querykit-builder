@@ -13,7 +13,9 @@ test('append raw strings and builders with operators', () => {
 	builder2.equals('Name', 'Jane');
 	builder.append(builder2, '||');
 
-	expect(builder.build()).toBe('Age == 30 && Name == "John" || Name == "Jane"');
+	expect(builder.build()).toBe(
+		'Age == 30 && Name == "John" || Name == "Jane"',
+	);
 });
 
 test('respects Filters= prefix removal when appending', () => {
@@ -46,11 +48,23 @@ test('avoids duplicate logical operators when appending after and/or', () => {
 });
 
 test('open/close paren with concat builds grouped clauses', () => {
-	const left = qb().openParen().equals('User.Id', 5).or().equals('User.Id', 6).closeParen();
-	const right = qb().openParen().equals('Status', 'Active').and().contains('User.Name', 'not').closeParen();
+	const left = qb()
+		.openParen()
+		.equals('User.Id', 5)
+		.or()
+		.equals('User.Id', 6)
+		.closeParen();
+	const right = qb()
+		.openParen()
+		.equals('Status', 'Active')
+		.and()
+		.contains('User.Name', 'not')
+		.closeParen();
 
 	const combined = qb().concat(left).and().concat(right);
-	expect(combined.build()).toBe('((User.Id == 5 || User.Id == 6 )) && ((Status == "Active" && User.Name @= "not" ))');
+	expect(combined.build()).toBe(
+		'((User.Id == 5 || User.Id == 6)) && ((Status == "Active" && User.Name @= "not"))',
+	);
 });
 
 test('concat inserts operator after Filters= when provided', () => {

@@ -1,31 +1,52 @@
-import { type Maybe, QueryOperator } from '../types';
+import {
+	type ArithExpression,
+	type Maybe,
+	type PropertyInput,
+	type PropertyRef,
+	QueryOperator,
+} from '../types';
 import { CaseInsensitiveQueryBuilder } from './operators-case-insensitive';
 
 export class CountQueryBuilder extends CaseInsensitiveQueryBuilder {
-	public countGreaterThan(property: string, value: Maybe<number>): this {
+	public countGreaterThan(
+		property: PropertyInput,
+		value: Maybe<number | PropertyRef | ArithExpression>,
+	): this {
 		return this.op(property, QueryOperator.CountGreaterThan, value);
 	}
 
-	public countLessThan(property: string, value: Maybe<number>): this {
+	public countLessThan(
+		property: PropertyInput,
+		value: Maybe<number | PropertyRef | ArithExpression>,
+	): this {
 		return this.op(property, QueryOperator.CountLessThan, value);
 	}
 
 	public countGreaterThanOrEqual(
-		property: string,
-		value: Maybe<number>,
+		property: PropertyInput,
+		value: Maybe<number | PropertyRef | ArithExpression>,
 	): this {
 		return this.op(property, QueryOperator.CountGreaterThanOrEqual, value);
 	}
 
-	public countLessThanOrEqual(property: string, value: Maybe<number>): this {
+	public countLessThanOrEqual(
+		property: PropertyInput,
+		value: Maybe<number | PropertyRef | ArithExpression>,
+	): this {
 		return this.op(property, QueryOperator.CountLessThanOrEqual, value);
 	}
 
-	public countEquals(property: string, value: Maybe<number>): this {
+	public countEquals(
+		property: PropertyInput,
+		value: Maybe<number | PropertyRef | ArithExpression>,
+	): this {
 		return this.op(property, QueryOperator.CountEquals, value);
 	}
 
-	public countNotEquals(property: string, value: Maybe<number>): this {
+	public countNotEquals(
+		property: PropertyInput,
+		value: Maybe<number | PropertyRef | ArithExpression>,
+	): this {
 		return this.op(property, QueryOperator.CountNotEquals, value);
 	}
 }

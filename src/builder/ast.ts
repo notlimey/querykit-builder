@@ -1,24 +1,42 @@
-import type { QueryOperator } from '../types';
+import type {
+	ArithExpression,
+	FilterValue,
+	PropertyRef,
+	QueryOperator,
+} from '../types';
 
 export type QueryToken =
 	| ConditionToken
 	| ArrayConditionToken
+	| NullConditionToken
 	| LogicalToken
 	| ParenToken
 	| RawToken;
 
 export type ConditionToken = {
 	type: 'condition';
+	/** Rendered left-hand side, e.g. `Title`, `(Title, Author.Name)`, `(Price * Quantity)`. */
 	property: string;
+	/** Present only when property list grouping was used. */
+	properties?: string[];
 	operator: QueryOperator;
-	value: string | number | boolean;
+	value: FilterValue | PropertyRef | ArithExpression;
 };
 
 export type ArrayConditionToken = {
 	type: 'conditionArray';
 	property: string;
+	properties?: string[];
 	operator: QueryOperator;
-	values: (string | number | boolean)[];
+	values: FilterValue[];
+};
+
+export type NullConditionToken = {
+	type: 'nullCondition';
+	property: string;
+	properties?: string[];
+	/** `==` for `isNull`, `!=` for `isNotNull`. */
+	operator: QueryOperator;
 };
 
 export type LogicalToken = {

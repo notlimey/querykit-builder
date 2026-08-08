@@ -1,5 +1,5 @@
-import { expect, test } from 'vitest';
 import { faker } from '@faker-js/faker';
+import { expect, test } from 'vitest';
 import QueryBuilder from '../../src/builder';
 import { QueryOperator } from '../../src/types';
 
@@ -26,7 +26,12 @@ test('exposes typed tokens for inspection', () => {
 	qb.equals('User.Id', id).and().contains('User.Name', nameFragment);
 
 	expect(qb.getTokens()).toEqual([
-		{ type: 'condition', property: 'User.Id', operator: QueryOperator.Equals, value: id },
+		{
+			type: 'condition',
+			property: 'User.Id',
+			operator: QueryOperator.Equals,
+			value: id,
+		},
 		{ type: 'logical', operator: '&&' },
 		{
 			type: 'condition',

@@ -47,6 +47,40 @@ const MyComponent = () => {
 };
 ```
 
+#### Newer QueryKit syntax inside `update`
+
+```typescript
+import { arith, prop } from 'querykit-builder';
+
+const { query, update } = useQueryBuilder();
+
+// Property list grouping — one search term across many fields
+update((qb) => qb.containsCaseInsensitive(['FirstName', 'LastName', 'Email'], term));
+// (FirstName, LastName, Email) @=* "term"
+
+// Explicit null checks (passing null to a normal operator stays a no-op)
+update((qb) => qb.and().isNull('DeletedAt'));
+
+// Arithmetic expressions
+update((qb) => qb.and().greaterThanOrEqual(arith('Score', '+', 'Bonus'), 50));
+
+// Property-to-property comparison
+update((qb) => qb.and().notEquals('FirstName', prop('LastName')));
+```
+
+#### Sorting
+
+`SortBuilder` is a plain (non-reactive) helper from the core package:
+
+```typescript
+import { SortBuilder } from 'querykit-builder';
+
+const sortOrder = new SortBuilder().desc('CreatedAt').asc('Title').build();
+// -CreatedAt, Title
+
+api.list({ filters: query, sortOrder });
+```
+
 #### Simple Widget filter
 
 ```typescript

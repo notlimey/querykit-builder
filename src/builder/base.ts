@@ -1,5 +1,22 @@
-import { type Maybe, QueryOperator } from '../types';
-import type { ArrayConditionToken, QueryToken } from './ast';
+import {
+	isUnquotedValue,
+	propertyList,
+	renderProperty,
+	renderUnquotedValue,
+} from '../expressions';
+import {
+	type FilterValue,
+	type Maybe,
+	type PropertyInput,
+	QueryOperator,
+	type ValueInput,
+} from '../types';
+import type {
+	ArrayConditionToken,
+	ConditionToken,
+	NullConditionToken,
+	QueryToken,
+} from './ast';
 
 export interface QueryBuilderOptions {
 	/**
@@ -51,49 +68,89 @@ export class BaseQueryBuilder {
 	}
 
 	protected op(
-		property: string,
+		property: PropertyInput,
 		operator: QueryOperator,
-		value: Maybe<string | number | boolean>,
+		value: Maybe<ValueInput>,
 		forceQuote: boolean = false,
 	): this {
 		if (value === null || value === undefined) {
 			return this;
 		}
-		const valStr = forceQuote
-			? this.stringifyValue(String(value))
-			: this.stringifyValue(value);
+
+		const propertyText = renderProperty(property);
+		const properties = propertyList(property);
+		const valStr = isUnquotedValue(value)
+			? renderUnquotedValue(value)
+			: forceQuote
+				? this.stringifyValue(String(value))
+				: this.stringifyValue(value);
+
 		this.tokens.push({
 			type: 'condition',
-			property,
+			property: propertyText,
+			...(properties ? { properties } : {}),
 			operator,
-			value: value as string | number | boolean,
-		});
-		return this.addCondition(`${property} ${operator} ${valStr}`);
+			value,
+		} satisfies ConditionToken);
+		return this.addCondition(`${propertyText} ${operator} ${valStr}`);
 	}
 
 	protected opArray(
-		property: string,
+		property: PropertyInput,
 		operator: QueryOperator,
-		values: Maybe<Maybe<string | number | boolean>[]>,
+		values: Maybe<Maybe<FilterValue>[]>,
 	): this {
 		if (!values) return this;
 
 		const validValues = values.filter(
-			(val): val is string | number | boolean =>
-				val !== null && val !== undefined,
+			(val): val is FilterValue => val !== null && val !== undefined,
 		);
 		if (validValues.length === 0) return this;
 
+		const propertyText = renderProperty(property);
+		const properties = propertyList(property);
 		const valueString = validValues
 			.map((val) => this.stringifyValue(val))
 			.join(',');
 		this.tokens.push({
 			type: 'conditionArray',
-			property,
+			property: propertyText,
+			...(properties ? { properties } : {}),
 			operator,
 			values: validValues,
 		} satisfies ArrayConditionToken);
-		return this.addCondition(`${property} ${operator} [${valueString}]`);
+		return this.addCondition(
+			`${propertyText} ${operator} [${valueString}]`,
+		);
+	}
+
+	/**
+	 * Emits an explicit null check, e.g. `DeletedAt == null`.
+	 * Passing `null`/`undefined` to a normal operator stays a no-op so optional
+	 * filters keep chaining cleanly — use this when you mean "is null".
+	 */
+	public isNull(property: PropertyInput): this {
+		return this.nullCheck(property, QueryOperator.Equals);
+	}
+
+	/** Emits an explicit not-null check, e.g. `Author.Email != null`. */
+	public isNotNull(property: PropertyInput): this {
+		return this.nullCheck(property, QueryOperator.NotEquals);
+	}
+
+	private nullCheck(
+		property: PropertyInput,
+		operator: QueryOperator.Equals | QueryOperator.NotEquals,
+	): this {
+		const propertyText = renderProperty(property);
+		const properties = propertyList(property);
+		this.tokens.push({
+			type: 'nullCondition',
+			property: propertyText,
+			...(properties ? { properties } : {}),
+			operator,
+		} satisfies NullConditionToken);
+		return this.addCondition(`${propertyText} ${operator} null`);
 	}
 
 	public append(
@@ -129,15 +186,15 @@ export class BaseQueryBuilder {
 	}
 
 	public in(
-		property: string,
-		values: Maybe<Maybe<string | number | boolean>[]>,
+		property: PropertyInput,
+		values: Maybe<Maybe<FilterValue>[]>,
 	): this {
 		return this.opArray(property, QueryOperator.In, values);
 	}
 
 	public notIn(
-		property: string,
-		values: Maybe<Maybe<string | number | boolean>[]>,
+		property: PropertyInput,
+		values: Maybe<Maybe<FilterValue>[]>,
 	): this {
 		return this.opArray(property, QueryOperator.NotIn, values);
 	}
@@ -161,7 +218,7 @@ export class BaseQueryBuilder {
 	}
 
 	public closeParen(): this {
-		this.query += ')';
+		this.query = `${this.query.replace(/\s+$/, '')})`;
 		this.tokens.push({ type: 'paren', value: ')' });
 		return this;
 	}

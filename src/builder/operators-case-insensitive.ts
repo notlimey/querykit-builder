@@ -1,24 +1,31 @@
-import { type Maybe, QueryOperator } from '../types';
+import {
+	type FilterValue,
+	type Maybe,
+	type PropertyInput,
+	QueryOperator,
+	type StringValueInput,
+	type ValueInput,
+} from '../types';
 import { CoreQueryBuilder } from './operators-core';
 
 export class CaseInsensitiveQueryBuilder extends CoreQueryBuilder {
 	public equalsCaseInsensitive(
-		property: string,
-		value: Maybe<string | number | boolean>,
+		property: PropertyInput,
+		value: Maybe<ValueInput>,
 	): this {
 		return this.op(property, QueryOperator.EqualsCaseInsensitive, value);
 	}
 
 	public notEqualsCaseInsensitive(
-		property: string,
-		value: Maybe<string | number | boolean>,
+		property: PropertyInput,
+		value: Maybe<ValueInput>,
 	): this {
 		return this.op(property, QueryOperator.NotEqualsCaseInsensitive, value);
 	}
 
 	public startsWithCaseInsensitive(
-		property: string,
-		value: Maybe<string>,
+		property: PropertyInput,
+		value: Maybe<StringValueInput>,
 	): this {
 		return this.op(
 			property,
@@ -29,8 +36,8 @@ export class CaseInsensitiveQueryBuilder extends CoreQueryBuilder {
 	}
 
 	public doesNotStartWithCaseInsensitive(
-		property: string,
-		value: Maybe<string>,
+		property: PropertyInput,
+		value: Maybe<StringValueInput>,
 	): this {
 		return this.op(
 			property,
@@ -41,8 +48,8 @@ export class CaseInsensitiveQueryBuilder extends CoreQueryBuilder {
 	}
 
 	public endsWithCaseInsensitive(
-		property: string,
-		value: Maybe<string>,
+		property: PropertyInput,
+		value: Maybe<StringValueInput>,
 	): this {
 		return this.op(
 			property,
@@ -53,8 +60,8 @@ export class CaseInsensitiveQueryBuilder extends CoreQueryBuilder {
 	}
 
 	public doesNotEndWithCaseInsensitive(
-		property: string,
-		value: Maybe<string>,
+		property: PropertyInput,
+		value: Maybe<StringValueInput>,
 	): this {
 		return this.op(
 			property,
@@ -65,8 +72,8 @@ export class CaseInsensitiveQueryBuilder extends CoreQueryBuilder {
 	}
 
 	public containsCaseInsensitive(
-		property: string,
-		value: Maybe<string>,
+		property: PropertyInput,
+		value: Maybe<StringValueInput>,
 	): this {
 		return this.op(
 			property,
@@ -77,8 +84,8 @@ export class CaseInsensitiveQueryBuilder extends CoreQueryBuilder {
 	}
 
 	public doesNotContainCaseInsensitive(
-		property: string,
-		value: Maybe<string>,
+		property: PropertyInput,
+		value: Maybe<StringValueInput>,
 	): this {
 		return this.op(
 			property,
@@ -89,15 +96,15 @@ export class CaseInsensitiveQueryBuilder extends CoreQueryBuilder {
 	}
 
 	public hasCaseInsensitive(
-		property: string,
-		value: Maybe<string | number | boolean>,
+		property: PropertyInput,
+		value: Maybe<ValueInput>,
 	): this {
 		return this.op(property, QueryOperator.HasCaseInsensitive, value);
 	}
 
 	public doesNotHaveCaseInsensitive(
-		property: string,
-		value: Maybe<string | number | boolean>,
+		property: PropertyInput,
+		value: Maybe<ValueInput>,
 	): this {
 		return this.op(
 			property,
@@ -107,15 +114,15 @@ export class CaseInsensitiveQueryBuilder extends CoreQueryBuilder {
 	}
 
 	public inCaseInsensitive(
-		property: string,
-		values: Maybe<Maybe<string | number | boolean>[]>,
+		property: PropertyInput,
+		values: Maybe<Maybe<FilterValue>[]>,
 	): this {
 		return this.opArray(property, QueryOperator.InCaseInsensitive, values);
 	}
 
 	public notInCaseInsensitive(
-		property: string,
-		values: Maybe<Maybe<string | number | boolean>[]>,
+		property: PropertyInput,
+		values: Maybe<Maybe<FilterValue>[]>,
 	): this {
 		return this.opArray(
 			property,
