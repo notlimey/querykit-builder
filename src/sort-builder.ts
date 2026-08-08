@@ -1,3 +1,4 @@
+import type { PropertyPath } from './paths';
 import type { Maybe } from './types';
 
 export type SortDirection = 'asc' | 'desc';
@@ -21,10 +22,45 @@ export interface SortBuilderOptions {
 }
 
 /**
+ * Parses a QueryKit sort input back into tokens, accepting both the sieve
+ * (`Title, -Age`) and verbose (`Title asc, Age desc`) forms. Unparseable or
+ * empty entries are skipped, so this is safe to point straight at a URL param.
+ *
+ * When an entry mixes both forms, the sign prefix wins: `-Title asc` parses
+ * as descending.
+ *
+ * @example
+ * parseSort('Title, -Age'); // [{ property: 'Title', direction: 'asc' }, { property: 'Age', direction: 'desc' }]
+ */
+export function parseSort(input: Maybe<string>): SortToken[] {
+	if (!input) return [];
+
+	return input
+		.split(',')
+		.map((entry) => entry.trim())
+		.filter((entry) => entry.length > 0)
+		.map((entry) => {
+			const descendingPrefix = entry.startsWith('-');
+			const withoutPrefix = entry.replace(/^[-+]/, '').trim();
+			const match = withoutPrefix.match(/^(\S+)(?:\s+(asc|desc))?$/i);
+			if (!match) return null;
+
+			const [, property, keyword] = match;
+			const direction: SortDirection =
+				descendingPrefix || keyword?.toLowerCase() === 'desc'
+					? 'desc'
+					: 'asc';
+
+			return { property, direction } satisfies SortToken;
+		})
+		.filter((token): token is SortToken => token !== null);
+}
+
+/**
  * Builds the QueryKit `sortOrder` input: a comma delimited list of properties.
  * Null/undefined properties are skipped so optional sorts keep chaining.
  */
-export class SortBuilder {
+export class SortBuilder<T = unknown> {
 	private tokens: SortToken[] = [];
 	private style: SortStyle;
 	private encodeURI: boolean;
@@ -37,16 +73,28 @@ export class SortBuilder {
 		this.encodeURI = encodeUri;
 	}
 
-	public asc(property: Maybe<string>): this {
+	/** Creates a builder from an existing sort string (see {@link parseSort}). */
+	public static from<T = unknown>(
+		input: Maybe<string>,
+		options: SortBuilderOptions = {},
+	): SortBuilder<T> {
+		const builder = new SortBuilder<T>(options);
+		for (const { property, direction } of parseSort(input)) {
+			builder.tokens.push({ property, direction });
+		}
+		return builder;
+	}
+
+	public asc(property: Maybe<PropertyPath<T>>): this {
 		return this.sortBy(property, 'asc');
 	}
 
-	public desc(property: Maybe<string>): this {
+	public desc(property: Maybe<PropertyPath<T>>): this {
 		return this.sortBy(property, 'desc');
 	}
 
 	public sortBy(
-		property: Maybe<string>,
+		property: Maybe<PropertyPath<T>>,
 		direction: SortDirection = 'asc',
 	): this {
 		if (property === null || property === undefined) return this;
@@ -66,7 +114,7 @@ export class SortBuilder {
 
 	/** Removes an existing entry for the property, then appends the new direction. */
 	public replace(
-		property: Maybe<string>,
+		property: Maybe<PropertyPath<T>>,
 		direction: SortDirection = 'asc',
 	): this {
 		if (property === null || property === undefined) return this;
@@ -78,8 +126,8 @@ export class SortBuilder {
 		return this;
 	}
 
-	public clone(): SortBuilder {
-		const cloned = new SortBuilder({
+	public clone(): SortBuilder<T> {
+		const cloned = new SortBuilder<T>({
 			style: this.style,
 			encodeUri: this.encodeURI,
 		});

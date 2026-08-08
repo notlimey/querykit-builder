@@ -1,3 +1,5 @@
+import type { LiteralValueFor, PropertyPath } from './paths';
+
 export enum QueryOperator {
 	Equals = '==',
 	NotEquals = '!=',
@@ -67,15 +69,29 @@ export type ArithExpression = {
 
 export type ArithOperator = '+' | '-' | '*' | '/' | '%';
 
-/** Anything accepted as the left-hand side of a condition. */
-export type PropertyInput =
-	| string
-	| readonly string[]
+/**
+ * Anything accepted as the left-hand side of a condition. With the default
+ * `T = unknown` any string is accepted; a typed builder narrows it to the
+ * entity's dot-paths. `prop()` stays untyped as the dynamic-name escape hatch.
+ */
+export type PropertyInput<T = unknown> =
+	| PropertyPath<T>
+	| readonly PropertyPath<T>[]
 	| PropertyRef
 	| ArithExpression;
 
 /** Anything accepted as the right-hand side of a condition. */
 export type ValueInput = FilterValue | PropertyRef | ArithExpression;
+
+/**
+ * The right-hand side a typed builder accepts for the given property input:
+ * the value type at that path (see `PathValue`), or a `prop()`/`arith()`
+ * reference. Collapses to `ValueInput` on untyped builders.
+ */
+export type ValueFor<T, P> =
+	| LiteralValueFor<T, P>
+	| PropertyRef
+	| ArithExpression;
 
 /** Right-hand side for string-only operators (contains, startsWith, ...). */
 export type StringValueInput = string | PropertyRef | ArithExpression;

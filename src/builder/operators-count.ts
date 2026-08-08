@@ -7,44 +7,46 @@ import {
 } from '../types';
 import { CaseInsensitiveQueryBuilder } from './operators-case-insensitive';
 
-export class CountQueryBuilder extends CaseInsensitiveQueryBuilder {
+export class CountQueryBuilder<
+	T = unknown,
+> extends CaseInsensitiveQueryBuilder<T> {
 	public countGreaterThan(
-		property: PropertyInput,
+		property: PropertyInput<T>,
 		value: Maybe<number | PropertyRef | ArithExpression>,
 	): this {
 		return this.op(property, QueryOperator.CountGreaterThan, value);
 	}
 
 	public countLessThan(
-		property: PropertyInput,
+		property: PropertyInput<T>,
 		value: Maybe<number | PropertyRef | ArithExpression>,
 	): this {
 		return this.op(property, QueryOperator.CountLessThan, value);
 	}
 
 	public countGreaterThanOrEqual(
-		property: PropertyInput,
+		property: PropertyInput<T>,
 		value: Maybe<number | PropertyRef | ArithExpression>,
 	): this {
 		return this.op(property, QueryOperator.CountGreaterThanOrEqual, value);
 	}
 
 	public countLessThanOrEqual(
-		property: PropertyInput,
+		property: PropertyInput<T>,
 		value: Maybe<number | PropertyRef | ArithExpression>,
 	): this {
 		return this.op(property, QueryOperator.CountLessThanOrEqual, value);
 	}
 
 	public countEquals(
-		property: PropertyInput,
+		property: PropertyInput<T>,
 		value: Maybe<number | PropertyRef | ArithExpression>,
 	): this {
 		return this.op(property, QueryOperator.CountEquals, value);
 	}
 
 	public countNotEquals(
-		property: PropertyInput,
+		property: PropertyInput<T>,
 		value: Maybe<number | PropertyRef | ArithExpression>,
 	): this {
 		return this.op(property, QueryOperator.CountNotEquals, value);

@@ -33,6 +33,56 @@ new QueryBuilder().equals('status', undefined).greaterThan('age', 25).build();
 // age > 25
 ```
 
+### Typed property paths
+
+Give the builder your entity type and property names become compile-checked
+dot-paths — including nested and collection paths — instead of arbitrary
+strings. QueryKit matches property names case-insensitively server-side, so
+paths from a camelCased generated API client work as-is against PascalCase C#
+properties.
+
+```typescript
+import type { Player } from './api-client';
+
+new QueryBuilder<Player>()
+	.equals('team.club.id', clubId)   // ✓ autocompleted
+	.and()
+	.greaterThan('age', 18)
+	.build();
+
+new QueryBuilder<Player>().equals('team.club.oops', 1);
+// type error: '"team.club.oops"' is not assignable …
+
+new SortBuilder<Player>().desc('createdAt').build();
+buildFilters<Player>({ search: (qb) => qb.contains('name', search) });
+```
+
+Values are checked against the type at the path, not just the path itself:
+
+```typescript
+const qb = new QueryBuilder<Ticket>();
+qb.equals('points', 18);              // ✓ number field
+qb.equals('points', 'eighteen');      // type error
+qb.equals('status', 'Open');          // literal unions survive:
+qb.equals('status', 'Archived');      // type error — not 'Open' | 'Closed'
+qb.greaterThan('createdAt', '2024-01-01'); // Date fields take ISO strings
+qb.has('labels', 'bug');              // collections check their element type
+qb.in('status', ['Open', 'Closed']);  // array values too
+```
+
+`PathValue<T, P>` is exported if you want the resolution yourself. `prop()`
+and `arith()` values stay unrestricted, as do object/`unknown` leaves.
+
+Recursion is depth-capped at 3 segments by default (`team.club.name`) —
+entity graphs are cyclic, and the cap is also what keeps huge generated API
+clients fast to type-check (a worst-case fully-cyclic 6-entity client checks
+in ~0.5s). Use `Path<T, 3>` where you genuinely need deeper, or
+`prop('a.b.c.d')` for a one-off. Arrays contribute both themselves (for
+has/count operators) and their element paths, and `Date` is a leaf. Typed
+builders are strict on purpose: a genuinely dynamic property name goes through
+`prop(dynamicName)`, which stays untyped. Omit the type parameter and
+everything behaves exactly as before — plain strings.
+
 ### Advanced example (grouping and mix of operators)
 
 ```typescript
@@ -81,17 +131,73 @@ qb.getTokens();
 
 Token types: `condition`, `conditionArray`, `nullCondition`, `logical`, `paren`, `raw`.
 
+### Parsing a query string
+
+`parseQuery` turns any QueryKit filter string — from a URL, a saved view, a
+builder — into a real tree, and `printQuery` renders it back. `&&` binds
+tighter than `||` (verified against QueryKit's own parser), and the printer
+parenthesizes mixed logical nesting defensively so a round-trip can never
+change meaning. `parseQuery(printQuery(ast))` is structurally identical to
+`ast`.
+
+```typescript
+import { parseQuery, printQuery, tryParseQuery } from 'querykit-builder';
+
+parseQuery('(Title, Author.Name) @=* "king" && Rating > 4');
+// { type: 'and',
+//   left:  { type: 'condition', lhs: { kind: 'group', paths: ['Title', 'Author.Name'] },
+//            operator: '@=*', rhs: { kind: 'string', value: 'king' } },
+//   right: { type: 'condition', lhs: { kind: 'property', path: 'Rating' },
+//            operator: '>', rhs: { kind: 'number', value: 4 } } }
+
+// Unquoted values classify the way QueryKit does: null, guid, datetime,
+// number, then property reference — so `FirstName == LastName` stays a
+// property-to-property comparison and `CreatedAt > 2022-07-01` a date.
+
+tryParseQuery('Age == ');       // { ok: false, error: ParseError { position: 7 } }
+```
+
+This is what makes an editable filter UI possible: hydrate chips from the URL,
+edit the tree, `printQuery` it back. `flattenConditions` gives the chip list,
+and `mapConditions`/`removeConditions` rewrite the tree while keeping it valid
+(a logical node that loses one side collapses to the other):
+
+```typescript
+import { flattenConditions, removeConditions } from 'querykit-builder';
+
+const ast = parseQuery('(A == 1 || B == 2) && C == 3');
+flattenConditions(ast).length;                          // 3, in printed order
+printQuery(removeConditions(ast, (_, i) => i === 0));  // B == 2 && C == 3
+```
+
+`QueryBuilder.from` uses the parser to make a builder chainable on top of an
+existing string:
+
+```typescript
+QueryBuilder.from('Filters= Age > 21 || VIP == true')
+	.and()
+	.equals('Status', 'Active')
+	.build();
+// (Age > 21 || VIP == true) && Status == "Active"   ← top-level || protected
+```
+
+One tokenizer rule to know: arithmetic operators are only recognized between
+spaces (`Price * Quantity`, which is what `arith()` emits), so `-` stays
+usable inside dates and signed numbers.
+
 ### Validating a raw query string
 
-`validateQuery` performs basic structure checks (operators, parens, alternation):
+`validateQuery` now runs the real parser, so it catches everything the parser
+does — unknown operators, missing values, unbalanced parens, unquoted string
+values — and reports the character position:
 
 ```typescript
 import { validateQuery } from 'querykit-builder';
 
 validateQuery('User.Id == 5 && User.Name @= "not"'); // { valid: true }
-validateQuery('(FirstName, LastName) @=* "paul"'); // { valid: true }
 validateQuery('(Price * Quantity) > 1000'); // { valid: true }
-validateQuery('User.Id == 5 User.Name @= "not"'); // { valid: false, errors: [...] }
+validateQuery('User.Id == 5 User.Name @= "not"');
+// { valid: false, errors: ['Unexpected "User.Name" after end of expression — … (at position 13)'] }
 ```
 
 ## Operations
@@ -317,6 +423,42 @@ sort.clone().clear().build();                  // ''
 sort.getTokens();                              // [{ property: 'Title', direction: 'asc' }, ...]
 ```
 
+### Combining optional filters
+
+`buildFilters` joins a keyed set of fragments and drops the falsy ones, which is
+usually what a filter UI needs — one entry per control, no manual `and()`
+bookkeeping. Fragments containing a top-level `&&`/`||` are parenthesized so the
+join operator cannot change their meaning.
+
+```typescript
+import { buildFilters } from 'querykit-builder';
+
+const filters = buildFilters({
+	search: search && ((qb) => qb.containsCaseInsensitive(['Title', 'Author.Name'], search)),
+	status: status.length && ((qb) => qb.in('Status', status)),
+	minAge: minAge != null && ((qb) => qb.greaterThanOrEqual('Age', minAge)),
+	active: (qb) => qb.isNull('DeletedAt'),
+});
+// (Title, Author.Name) @=* "..." && Status ^^ [...] && Age >= 18 && DeletedAt == null
+// with search = '' and status = []: Age >= 18 && DeletedAt == null
+```
+
+Entries can also be strings, existing builders, or a plain array; `{ join: '||' }`,
+`encodeUri` and `addFilterStatement` are supported. Everything filtered out
+yields `''`.
+
+### Reading a sort string back
+
+```typescript
+import { parseSort, SortBuilder } from 'querykit-builder';
+
+parseSort('Title, -Age');
+// [{ property: 'Title', direction: 'asc' }, { property: 'Age', direction: 'desc' }]
+
+parseSort('Title asc, Age DESC');     // same result — both syntaxes are accepted
+SortBuilder.from('  -CreatedAt ,Title ').build(); // -CreatedAt, Title (normalized)
+```
+
 ### Putting it together
 
 ```typescript
@@ -343,19 +485,21 @@ const sortOrder = new SortBuilder().desc('CreatedAt').asc('Title').build();
 
 - Fluent API for building queries
 - Full operator parity with QueryKit (comparison, string, collection, case-insensitive, count)
+- Typed property paths: `QueryBuilder<Entity>` compile-checks dot-paths, with `prop()` as the dynamic escape hatch
+- `parseQuery`/`printQuery`: a real parser producing an AST that round-trips losslessly, plus `QueryBuilder.from()` to chain onto existing strings
 - Property list grouping, property-to-property comparisons, arithmetic expressions and explicit null checks
-- `SortBuilder` for the sort input
+- `SortBuilder` for the sort input, `parseSort`/`SortBuilder.from` to read one back
 - Typed tokens via `getTokens()` for inspection/debugging
-- `validateQuery` for basic structural checks on raw strings
-- Type-safe methods
+- `validateQuery` backed by the parser, with character positions in errors
 - Logical operators (`&&`, `||`)
 - Grouping with parentheses
 - URL encoding support (disabled by default)
 
 ## Limitations / gotchas
 
-- The builder is string-based; it does not parse existing queries into AST form. Use `validateQuery` to catch common shape errors in raw strings, but it is not a full parser.
-- Inline arrays/strings are accepted, but field names and values are not schema-validated—ensure you pass valid fields for your API.
+- The builder itself is append-only; use `parseQuery` → edit the AST → `printQuery` (or `QueryBuilder.from`) when you need to modify an existing query.
+- Arithmetic needs spaces around its operators (`Price * Quantity`); `Price*Quantity` reads as a single word. `arith()` always emits spaces.
+- Untyped builders don't schema-validate field names — use `QueryBuilder<Entity>` to get that at compile time.
 - Escaping is limited to quotes/backslashes; other special handling (like Unicode normalization) is caller-owned.
 - Property list grouping semantics (OR for positive operators, AND for negative ones) are applied server-side by QueryKit; the builder only renders the syntax.
 - Arithmetic and property-to-property comparisons require a QueryKit version that supports them (v1.11+).
@@ -392,6 +536,8 @@ const sortOrder = new SortBuilder().desc('CreatedAt').asc('Title').build();
 | Arithmetic | `greaterThan(arith('A', '+', 'B'), 5)` | `(A + B) > 5` |
 | Null checks | `isNull('A')` / `isNotNull('A')` | `A == null` / `A != null` |
 | Sorting | `new SortBuilder().asc('A').desc('B')` | `A, -B` |
+| Optional filter sets | `buildFilters({ a: x && (qb => …) })` | `…` (falsy entries dropped) |
+| Parsing sort input | `parseSort('Title, -Age')` | `SortToken[]` |
 
 ## Todos
 1. CI/CD to simplify deployment

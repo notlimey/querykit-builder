@@ -1,5 +1,17 @@
 # React QueryKit Builder Documentation
 
+## Choosing a hook
+
+| Hook | Use when |
+| :--- | :--- |
+| `useFilters` | Filter values already live somewhere (nuqs, props, context) and you need the query string. **Preferred for filter UIs.** |
+| `useSort` | Column sorting; controlled (nuqs) or uncontrolled. |
+| `useQueryBuilder` | The query is assembled imperatively rather than derived from values. Append-only. |
+
+`useFilters` and `useSort` are documented with full nuqs + TanStack Query
+examples in the [package README](../README.md). The rest of this document covers
+`useQueryBuilder`.
+
 ## `useQueryBuilder` Hook
 
 The `useQueryBuilder` hook provides a reactive way to construct and manage QueryKit queries in React components. It supports initialization from strings, existing `QueryBuilder` instances, or arrays of both, enabling easy composition and chaining of filters.

@@ -1,11 +1,20 @@
-import type { QueryBuilder, QueryBuilderOptions } from 'querykit-builder';
+import {
+	type ConditionExpr,
+	flattenConditions,
+	mapConditions,
+	printQuery,
+	type QueryBuilder,
+	type QueryBuilderOptions,
+	type QueryExpr,
+	tryParseQuery,
+} from 'querykit-builder';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
 	createObservableBuilder,
 	type ObservableBuilder,
 	SET_ON_CHANGE,
 	serializeInput,
-} from './reactive-query-builder';
+} from './reactive-query-builder.js';
 
 type QueryFragment = string | QueryBuilder | null | undefined;
 type QueryInput = QueryFragment | readonly QueryFragment[];
@@ -111,10 +120,98 @@ export function useQueryBuilder(
 		setQuery(builder.build());
 	}, [encodeUri, addFilterStatement, populateBuilder]);
 
+	// ---- AST editing (parseQuery-backed) -------------------------------
+
+	const decode = useCallback(
+		(value: string) => {
+			if (!encodeUri) return value;
+			try {
+				return decodeURIComponent(value);
+			} catch {
+				return value;
+			}
+		},
+		[encodeUri],
+	);
+
+	/**
+	 * Conditions of the current query in printed order — the list a filter-chip
+	 * UI renders. Empty when the query has raw fragments the parser rejects.
+	 */
+	const conditions = useMemo<readonly ConditionExpr[]>(() => {
+		const parsed = tryParseQuery(decode(query));
+		return parsed.ok ? flattenConditions(parsed.ast) : [];
+	}, [query, decode]);
+
+	const setFromAst = useCallback(
+		(ast: QueryExpr | null) => {
+			const builder = createObservableBuilder(
+				encodeUri,
+				addFilterStatement,
+			);
+			if (ast) {
+				const printed = printQuery(ast);
+				// protect a top-level || from a later chained &&
+				builder.append(ast.type === 'or' ? `(${printed})` : printed);
+			}
+			builder[SET_ON_CHANGE](() => setQuery(builder.build()));
+			builderRef.current = builder;
+			setQuery(builder.build());
+		},
+		[encodeUri, addFilterStatement],
+	);
+
+	/**
+	 * Rewrites every condition: return the condition to keep it, a new one to
+	 * replace it, `null` to remove it (indexes match `conditions`). Returns
+	 * false — and changes nothing — when the current query is unparseable.
+	 */
+	const editConditions = useCallback(
+		(
+			fn: (
+				condition: ConditionExpr,
+				index: number,
+			) => ConditionExpr | null,
+		): boolean => {
+			const parsed = tryParseQuery(
+				decode(builderRef.current?.build() ?? ''),
+			);
+			if (!parsed.ok) return false;
+			setFromAst(mapConditions(parsed.ast, fn));
+			return true;
+		},
+		[decode, setFromAst],
+	);
+
+	const removeCondition = useCallback(
+		(index: number) =>
+			editConditions((condition, i) => (i === index ? null : condition)),
+		[editConditions],
+	);
+
+	const removeWhere = useCallback(
+		(predicate: (condition: ConditionExpr, index: number) => boolean) =>
+			editConditions((condition, i) =>
+				predicate(condition, i) ? null : condition,
+			),
+		[editConditions],
+	);
+
+	const replaceCondition = useCallback(
+		(index: number, next: ConditionExpr) =>
+			editConditions((condition, i) => (i === index ? next : condition)),
+		[editConditions],
+	);
+
 	return {
 		query,
 		update,
 		reset,
 		builder: builderRef.current as QueryBuilder,
+		conditions,
+		editConditions,
+		removeCondition,
+		removeWhere,
+		replaceCondition,
 	};
 }

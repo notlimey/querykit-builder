@@ -4,6 +4,7 @@ import {
 	renderProperty,
 	renderUnquotedValue,
 } from '../expressions';
+import type { LiteralValueFor } from '../paths';
 import {
 	type FilterValue,
 	type Maybe,
@@ -34,7 +35,7 @@ export interface QueryBuilderOptions {
 /**
  * Base builder that handles query assembly and core helpers.
  */
-export class BaseQueryBuilder {
+export class BaseQueryBuilder<T = unknown> {
 	protected query: string;
 	protected encodeURI: boolean;
 	protected addFilterStatement: boolean;
@@ -68,7 +69,7 @@ export class BaseQueryBuilder {
 	}
 
 	protected op(
-		property: PropertyInput,
+		property: PropertyInput<T>,
 		operator: QueryOperator,
 		value: Maybe<ValueInput>,
 		forceQuote: boolean = false,
@@ -96,7 +97,7 @@ export class BaseQueryBuilder {
 	}
 
 	protected opArray(
-		property: PropertyInput,
+		property: PropertyInput<T>,
 		operator: QueryOperator,
 		values: Maybe<Maybe<FilterValue>[]>,
 	): this {
@@ -129,17 +130,17 @@ export class BaseQueryBuilder {
 	 * Passing `null`/`undefined` to a normal operator stays a no-op so optional
 	 * filters keep chaining cleanly — use this when you mean "is null".
 	 */
-	public isNull(property: PropertyInput): this {
+	public isNull(property: PropertyInput<T>): this {
 		return this.nullCheck(property, QueryOperator.Equals);
 	}
 
 	/** Emits an explicit not-null check, e.g. `Author.Email != null`. */
-	public isNotNull(property: PropertyInput): this {
+	public isNotNull(property: PropertyInput<T>): this {
 		return this.nullCheck(property, QueryOperator.NotEquals);
 	}
 
 	private nullCheck(
-		property: PropertyInput,
+		property: PropertyInput<T>,
 		operator: QueryOperator.Equals | QueryOperator.NotEquals,
 	): this {
 		const propertyText = renderProperty(property);
@@ -154,7 +155,7 @@ export class BaseQueryBuilder {
 	}
 
 	public append(
-		query: string | BaseQueryBuilder,
+		query: string | BaseQueryBuilder<never>,
 		operator?: '&&' | '||',
 	): this {
 		let q = query instanceof BaseQueryBuilder ? query.query : query;
@@ -185,16 +186,16 @@ export class BaseQueryBuilder {
 		return this;
 	}
 
-	public in(
-		property: PropertyInput,
-		values: Maybe<Maybe<FilterValue>[]>,
+	public in<P extends PropertyInput<T>>(
+		property: P,
+		values: Maybe<Maybe<LiteralValueFor<T, NoInfer<P>>>[]>,
 	): this {
 		return this.opArray(property, QueryOperator.In, values);
 	}
 
-	public notIn(
-		property: PropertyInput,
-		values: Maybe<Maybe<FilterValue>[]>,
+	public notIn<P extends PropertyInput<T>>(
+		property: P,
+		values: Maybe<Maybe<LiteralValueFor<T, NoInfer<P>>>[]>,
 	): this {
 		return this.opArray(property, QueryOperator.NotIn, values);
 	}
@@ -223,7 +224,10 @@ export class BaseQueryBuilder {
 		return this;
 	}
 
-	public concat(other: BaseQueryBuilder, operator?: '&&' | '||'): this {
+	public concat(
+		other: BaseQueryBuilder<never>,
+		operator?: '&&' | '||',
+	): this {
 		const currentTrimmed = this.query.trim();
 		const shouldAddOperator = operator && currentTrimmed !== '';
 
@@ -243,11 +247,11 @@ export class BaseQueryBuilder {
 		return this;
 	}
 
-	public clone(): BaseQueryBuilder {
+	public clone(): BaseQueryBuilder<T> {
 		const BuilderCtor = this.constructor as new (
 			encodeUri?: boolean,
 			addFilterStatement?: boolean,
-		) => BaseQueryBuilder;
+		) => BaseQueryBuilder<T>;
 		const cloned = new BuilderCtor(this.encodeURI, this.addFilterStatement);
 		cloned.query = this.query;
 		cloned.tokens = [...this.tokens];
