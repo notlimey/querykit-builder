@@ -1,3 +1,8 @@
 packages:
   - '.'
   - 'packages/*'
+
+# Resolve `querykit-builder` from this workspace instead of the registry, so the
+# react package builds against local source and CI can install a version that
+# has not been published yet.
+linkWorkspacePackages: true
